@@ -8,8 +8,11 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 import { useMobileDetection } from '@/hooks/useMobileDetection';
-
-// Terminal removido - usando apenas editor de código
+import { IntegratedTerminal } from '@/components/IntegratedTerminal';
+import { Resizer } from '@/components/ResizablePanel';
+import { ProjectFileSystem } from '@/services/ProjectFileSystem';
+import { IntegratedMaestro } from '@/services/IntegratedMaestro';
+import { ProjectsModal } from '@/components/ProjectsModal';
 
 
 interface ChatViewProps {
@@ -237,6 +240,13 @@ export const ChatView: React.FC<ChatViewProps> = ({
   
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+  
+  // Estados para integração com FileSystem
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [showProjectsModal, setShowProjectsModal] = useState(false);
 
   const fileTree = useMemo(() => buildFileTree(projectFiles), [projectFiles]);
   const activeFileContent = useMemo(() => projectFiles.find(f => f.path === activeFile)?.content ?? '', [projectFiles, activeFile]);
@@ -308,6 +318,175 @@ export const ChatView: React.FC<ChatViewProps> = ({
       });
   }, [chats]);
   
+  // Funções de integração com FileSystem
+  const handleSaveProject = async () => {
+    if (projectFiles.length === 0) {
+      setActionMessage('❌ Nenhum arquivo para salvar');
+      setTimeout(() => setActionMessage(null), 3000);
+      return;
+    }
+    
+    setIsSaving(true);
+    setActionMessage('💾 Salvando projeto...');
+    
+    try {
+      const projectName = activeChat?.title || 'Projeto AI Weaver';
+      const project = await ProjectFileSystem.createProject(projectName, projectFiles);
+      
+      setCurrentProjectId(project.id);
+      setActionMessage(`✅ Projeto salvo em: ${project.path}`);
+      setTimeout(() => setActionMessage(null), 5000);
+    } catch (error: any) {
+      setActionMessage(`❌ Erro ao salvar: ${error.message}`);
+      setTimeout(() => setActionMessage(null), 5000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
+  const handleInstallApp = async () => {
+    setIsInstalling(true);
+    setActionMessage('📦 Instalando como app...');
+    
+    try {
+      // Se não tem projeto salvo, salvar primeiro
+      let projectId = currentProjectId;
+      
+      if (!projectId) {
+        const projectName = activeChat?.title || 'Projeto AI Weaver';
+        const project = await ProjectFileSystem.createProject(projectName, projectFiles);
+        projectId = project.id;
+        setCurrentProjectId(projectId);
+      }
+      
+      // Instalar como app
+      const result = await ProjectFileSystem.installAsApp(projectId);
+      
+      if (result.success) {
+        setActionMessage(`✅ App instalado! ID: ${result.appId}`);
+        setTimeout(() => setActionMessage(null), 5000);
+      } else {
+        setActionMessage(`❌ Erro ao instalar: ${result.error}`);
+        setTimeout(() => setActionMessage(null), 5000);
+      }
+    } catch (error: any) {
+      setActionMessage(`❌ Erro: ${error.message}`);
+      setTimeout(() => setActionMessage(null), 5000);
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+  
+  const handleOpenFolder = async () => {
+    if (!currentProjectId) {
+      setActionMessage('❌ Salve o projeto primeiro');
+      setTimeout(() => setActionMessage(null), 3000);
+      return;
+    }
+    
+    setActionMessage('📁 Abrindo explorador...');
+    
+    try {
+      const success = await ProjectFileSystem.openInExplorer(currentProjectId);
+      
+      if (success) {
+        setActionMessage('✅ Explorador aberto');
+        setTimeout(() => setActionMessage(null), 3000);
+      } else {
+        setActionMessage('❌ Erro ao abrir explorador');
+        setTimeout(() => setActionMessage(null), 3000);
+      }
+    } catch (error: any) {
+      setActionMessage(`❌ Erro: ${error.message}`);
+      setTimeout(() => setActionMessage(null), 3000);
+    }
+  };
+  
+  // IMPORTANTE: Todos os hooks devem ser chamados antes de qualquer return condicional
+  const { isMobile } = useMobileDetection();
+  
+  // Estados para painéis redimensionáveis (Desktop)
+  const [showTerminal, setShowTerminal] = useState(true);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(16.66);
+  const [centerPanelWidth, setCenterPanelWidth] = useState(50);
+  const [editorHeight, setEditorHeight] = useState(50);
+  const [isResizingLeft, setIsResizingLeft] = useState(false);
+  const [isResizingCenter, setIsResizingCenter] = useState(false);
+  const [isResizingEditor, setIsResizingEditor] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Calcular largura do painel direito
+  const rightPanelWidth = 100 - leftPanelWidth - centerPanelWidth;
+  
+  // Handlers de resize
+  const handleLeftResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingLeft(true);
+  };
+  
+  const handleCenterResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingCenter(true);
+  };
+  
+  const handleEditorResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingEditor(true);
+  };
+  
+  // Effect para resize
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      
+      const rect = containerRef.current.getBoundingClientRect();
+      
+      if (isResizingLeft) {
+        const x = e.clientX - rect.left;
+        const newWidth = (x / rect.width) * 100;
+        setLeftPanelWidth(Math.max(10, Math.min(30, newWidth)));
+      }
+      
+      if (isResizingCenter) {
+        const x = e.clientX - rect.left;
+        const leftEdge = (leftPanelWidth / 100) * rect.width;
+        const newWidth = ((x - leftEdge) / rect.width) * 100;
+        setCenterPanelWidth(Math.max(30, Math.min(70, newWidth)));
+      }
+      
+      if (isResizingEditor && showTerminal) {
+        const editorContainer = containerRef.current.querySelector('.editor-terminal-container');
+        if (editorContainer) {
+          const editorRect = editorContainer.getBoundingClientRect();
+          const y = e.clientY - editorRect.top;
+          const newHeight = (y / editorRect.height) * 100;
+          setEditorHeight(Math.max(20, Math.min(80, newHeight)));
+        }
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizingLeft(false);
+      setIsResizingCenter(false);
+      setIsResizingEditor(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    
+    if (isResizingLeft || isResizingCenter || isResizingEditor) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = isResizingEditor ? 'row-resize' : 'col-resize';
+      document.body.style.userSelect = 'none';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizingLeft, isResizingCenter, isResizingEditor, leftPanelWidth, showTerminal]);
+  
+  // Agora sim, podemos ter returns condicionais
   if (projectFiles.length === 0) {
       return (
         <div className="flex-grow flex flex-col items-center justify-center text-slate-400 p-4">
@@ -325,8 +504,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
       );
   }
-
-  const { isMobile } = useMobileDetection();
 
   // Layout Mobile - Vertical com proporções específicas
   if (isMobile) {
@@ -483,6 +660,54 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 ))}
                 <div ref={messagesEndRef} />
               </div>
+              {/* Action Buttons Mobile */}
+              <div className="flex-shrink-0 px-2 py-1.5 border-t border-slate-700 bg-slate-800/50">
+                <div className="flex gap-1 mb-1">
+                  <button
+                    onClick={() => setShowProjectsModal(true)}
+                    className="flex-1 px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded flex items-center justify-center gap-1"
+                  >
+                    <i className="fa-solid fa-folder-tree fa-xs"></i>
+                    Projetos
+                  </button>
+                  
+                  <button
+                    onClick={handleSaveProject}
+                    disabled={isSaving || projectFiles.length === 0}
+                    className="flex-1 px-2 py-1 text-xs bg-green-600 hover:bg-green-500 disabled:bg-slate-600 text-white rounded flex items-center justify-center gap-1"
+                  >
+                    <i className={`fa-solid ${isSaving ? 'fa-spinner animate-spin' : 'fa-save'} fa-xs`}></i>
+                    {currentProjectId ? 'Atualizar' : 'Salvar'}
+                  </button>
+                </div>
+                
+                <div className="flex gap-1">
+                  <button
+                    onClick={handleInstallApp}
+                    disabled={isInstalling || projectFiles.length === 0}
+                    className="flex-1 px-2 py-1 text-xs bg-purple-600 hover:bg-purple-500 disabled:bg-slate-600 text-white rounded flex items-center justify-center gap-1"
+                  >
+                    <i className={`fa-solid ${isInstalling ? 'fa-spinner animate-spin' : 'fa-box'} fa-xs`}></i>
+                    Instalar
+                  </button>
+                  
+                  <button
+                    onClick={handleOpenFolder}
+                    disabled={!currentProjectId}
+                    className="flex-1 px-2 py-1 text-xs bg-amber-600 hover:bg-amber-500 disabled:bg-slate-600 text-white rounded flex items-center justify-center gap-1"
+                  >
+                    <i className="fa-solid fa-folder-open fa-xs"></i>
+                    Pasta
+                  </button>
+                </div>
+                
+                {actionMessage && (
+                  <div className="mt-1 px-2 py-1 bg-slate-700 text-slate-200 text-xs rounded text-center">
+                    {actionMessage}
+                  </div>
+                )}
+              </div>
+              
               <div className="flex-shrink-0 p-2 border-t border-slate-700">
                 <div className="flex gap-2">
                   <textarea
@@ -522,11 +747,16 @@ export const ChatView: React.FC<ChatViewProps> = ({
     );
   }
 
-  // Layout Desktop - Original
+  // Layout Desktop - Com Terminal Integrado e Painéis Redimensionáveis
+  // (Estados já declarados no início do componente)
+  
   return (
-    <div className="flex-grow grid grid-cols-12 overflow-hidden bg-slate-900 gap-1 p-1 h-full">
+    <div ref={containerRef} className="flex-grow flex overflow-hidden bg-slate-900 gap-0 p-1 h-full">
       {/* Leftmost Panel (Chat List + File Explorer) */}
-      <div className="col-span-2 bg-slate-800/80 rounded-md flex flex-col min-w-[200px] overflow-hidden">
+      <div 
+        className="bg-slate-800/80 rounded-md flex flex-col overflow-hidden"
+        style={{ width: `${leftPanelWidth}%`, minWidth: '150px' }}
+      >
         
         {/* Container for scrollable lists */}
         <div className="flex-grow flex flex-col min-h-0">
@@ -611,20 +841,36 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </button>
         </div>
       </div>
+      
+      {/* Resizer Left */}
+      <Resizer direction="horizontal" onMouseDown={handleLeftResize} />
 
-
-      {/* Center Panel (Code Editor - SEMPRE VISÍVEL) */}
-      <div className="col-span-6 bg-slate-800/80 rounded-md flex flex-col overflow-hidden">
-        {/* Header do Editor */}
+      {/* Center Panel (Code Editor + Terminal) */}
+      <div 
+        className="bg-slate-800/80 rounded-md flex flex-col overflow-hidden editor-terminal-container"
+        style={{ width: `${centerPanelWidth}%`, minWidth: '300px' }}
+      >
+        {/* Header do Editor com Toggle Terminal */}
         <div className="flex-shrink-0 bg-slate-800 text-slate-300 text-xs px-3 py-1.5 flex justify-between items-center rounded-t-md border-b border-slate-700">
           <span className="font-semibold">
             <i className="fa-solid fa-file-code mr-2 text-sky-400"></i>
             {activeFile || 'index.html'}
           </span>
+          <button
+            onClick={() => setShowTerminal(!showTerminal)}
+            className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors flex items-center gap-1.5"
+            title={showTerminal ? 'Ocultar Terminal' : 'Mostrar Terminal'}
+          >
+            <i className={`fa-solid ${showTerminal ? 'fa-terminal-slash' : 'fa-terminal'} text-xs`}></i>
+            <span>{showTerminal ? 'Ocultar' : 'Terminal'}</span>
+          </button>
         </div>
         
-        {/* Editor Monaco - SEMPRE VISÍVEL */}
-        <div className="flex-grow min-h-0">
+        {/* Editor Monaco */}
+        <div 
+          className="min-h-0 border-b border-slate-700"
+          style={{ height: showTerminal ? `${editorHeight}%` : '100%' }}
+        >
           <Editor
             path={activeFile || 'index.html'}
             value={activeFileContent || '<!DOCTYPE html>\n<html>\n<head>\n    <title>Meu Site</title>\n</head>\n<body>\n    <h1>Bem-vindo!</h1>\n</body>\n</html>'}
@@ -663,10 +909,37 @@ export const ChatView: React.FC<ChatViewProps> = ({
             }}
           />
         </div>
+        
+        {/* Resizer Editor/Terminal */}
+        {showTerminal && (
+          <Resizer direction="vertical" onMouseDown={handleEditorResize} />
+        )}
+        
+        {/* Terminal Integrado */}
+        {showTerminal && (
+          <div 
+            className="min-h-0 overflow-hidden"
+            style={{ height: `${100 - editorHeight}%` }}
+          >
+            <IntegratedTerminal 
+              projectFiles={projectFiles.map(f => f.path)}
+              onCommandExecuted={(command, output) => {
+                console.log('Comando executado:', command);
+                console.log('Output:', output);
+              }}
+            />
+          </div>
+        )}
       </div>
+      
+      {/* Resizer Center */}
+      <Resizer direction="horizontal" onMouseDown={handleCenterResize} />
 
       {/* Rightmost Panel (Chat Messages) */}
-      <div className="col-span-4 bg-slate-800/80 rounded-md flex flex-col overflow-hidden">
+      <div 
+        className="bg-slate-800/80 rounded-md flex flex-col overflow-hidden"
+        style={{ width: `${rightPanelWidth}%`, minWidth: '250px' }}
+      >
         {activeChat ? (
             <>
                 {/* Chat Header */}
@@ -702,6 +975,57 @@ export const ChatView: React.FC<ChatViewProps> = ({
                     ))}
                     <div ref={messagesEndRef} />
                 </div>
+                {/* Action Buttons */}
+                <div className="flex-shrink-0 px-3 py-2 border-t border-slate-700 bg-slate-800/50">
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => setShowProjectsModal(true)}
+                      className="flex-1 min-w-[100px] px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors flex items-center justify-center gap-1.5"
+                      title="Ver todos os projetos salvos"
+                    >
+                      <i className="fa-solid fa-folder-tree"></i>
+                      Ver Projetos
+                    </button>
+                    
+                    <button
+                      onClick={handleSaveProject}
+                      disabled={isSaving || projectFiles.length === 0}
+                      className="flex-1 min-w-[100px] px-3 py-1.5 text-xs bg-green-600 hover:bg-green-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-md transition-colors flex items-center justify-center gap-1.5"
+                      title="Salvar projeto no HD"
+                    >
+                      <i className={`fa-solid ${isSaving ? 'fa-spinner animate-spin' : 'fa-save'}`}></i>
+                      {currentProjectId ? 'Atualizar' : 'Salvar'}
+                    </button>
+                    
+                    <button
+                      onClick={handleInstallApp}
+                      disabled={isInstalling || projectFiles.length === 0}
+                      className="flex-1 min-w-[100px] px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-md transition-colors flex items-center justify-center gap-1.5"
+                      title="Instalar como app via CLI"
+                    >
+                      <i className={`fa-solid ${isInstalling ? 'fa-spinner animate-spin' : 'fa-box'}`}></i>
+                      Instalar
+                    </button>
+                    
+                    <button
+                      onClick={handleOpenFolder}
+                      disabled={!currentProjectId}
+                      className="flex-1 min-w-[100px] px-3 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-md transition-colors flex items-center justify-center gap-1.5"
+                      title="Abrir pasta no explorador"
+                    >
+                      <i className="fa-solid fa-folder-open"></i>
+                      Abrir Pasta
+                    </button>
+                  </div>
+                  
+                  {/* Action Message */}
+                  {actionMessage && (
+                    <div className="mt-2 px-3 py-1.5 bg-slate-700 text-slate-200 text-xs rounded-md text-center">
+                      {actionMessage}
+                    </div>
+                  )}
+                </div>
+                
                 {/* Prompt Input */}
                 <div className="flex-shrink-0 p-3 border-t border-slate-700 bg-slate-800">
                    <div className="relative">
@@ -732,6 +1056,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
             </div>
         )}
       </div>
+      
+      {/* Projects Modal */}
+      <ProjectsModal 
+        isOpen={showProjectsModal} 
+        onClose={() => setShowProjectsModal(false)} 
+      />
     </div>
   );
 };
