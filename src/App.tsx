@@ -1,33 +1,33 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useAppStore, initialHtmlBase, textModelOptions } from './store/useAppStore';
-import { generateAiResponseStream } from './services/GeminiService';
-import { AttachmentFile } from './types/global';
-import { ModalOrchestrator } from './components/ModalOrchestrator';
-import { PanelOrchestrator } from './components/PanelOrchestrator';
-import { UniversalScoringSystem } from './services/UniversalScoringSystem';
-import { CommandBar } from '@/components/CommandBar';
-import { ResponsiveLayout } from '@/components/ResponsiveLayout';
-import { MobileCommandBarOptimized } from '@/components/MobileCommandBarOptimized';
-import { ResponsiveEditor } from '@/components/ResponsiveEditor';
-import { ResponsivePreview } from '@/components/ResponsivePreview';
+import { useAppStore, initialHtmlBase, textModelOptions } from '../store/useAppStore';
+import { generateAiResponseStream } from '../services/GeminiService';
+import { AttachmentFile } from '../types/global';
+import { ModalOrchestrator } from '../components/ModalOrchestrator';
+import { PanelOrchestrator } from '../components/PanelOrchestrator';
+import { UniversalScoringSystem } from '../services/UniversalScoringSystem';
+import { CommandBar } from '../components/CommandBar';
+import { ResponsiveLayout } from '../components/ResponsiveLayout';
+import { MobileCommandBarOptimized } from '../components/MobileCommandBarOptimized';
+import { ResponsiveEditor } from '../components/ResponsiveEditor';
+import { ResponsivePreview } from '../components/ResponsivePreview';
 import { v4 as uuidv4 } from 'uuid';
 import { marked } from 'marked';
-import { HtmlPreview } from '@/components/HtmlPreview';
-import { HtmlEditor } from '@/components/HtmlEditor';
-import { useMobileDetection } from '@/hooks/useMobileDetection';
-import ContextualAiPanel from '@/components/ContextualAiPanel';
-import EvolutionTracker, { type EvolutionStep } from '@/components/EvolutionTracker';
-import ModelPlaygroundModal from '@/components/ModelPlaygroundModal';
-import BrainstormingModal from '@/components/BrainstormingModal';
-import ThemeCustomizerModal from '@/components/ThemeCustomizerModal';
-import ProjectTaskManager from '@/components/ProjectTaskManager';
-import { TechStackSelector } from '@/components/TechStackSelector';
-import { ColorPaletteSelector } from '@/components/ColorPaletteSelector';
-import SiteCriticModal from '@/components/SiteCriticModal';
-import ProjectSnapshotsModal from '@/components/ProjectSnapshotsModal';
-import AiCodeInsightModal from '@/components/AiCodeInsightModal';
-import AiErrorFallbackModal from '@/components/AiErrorFallbackModal';
-import TestSuggestionModal from '@/components/TestSuggestionModal';
+import { HtmlPreview } from '../components/HtmlPreview';
+import { HtmlEditor } from '../components/HtmlEditor';
+import { useMobileDetection } from '../hooks/useMobileDetection';
+import ContextualAiPanel from '../components/ContextualAiPanel';
+import EvolutionTracker, { type EvolutionStep } from '../components/EvolutionTracker';
+import ModelPlaygroundModal from '../components/ModelPlaygroundModal';
+import BrainstormingModal from '../components/BrainstormingModal';
+import ThemeCustomizerModal from '../components/ThemeCustomizerModal';
+import ProjectTaskManager from '../components/ProjectTaskManager';
+import { TechStackSelector } from '../components/TechStackSelector';
+import { ColorPaletteSelector } from '../components/ColorPaletteSelector';
+import SiteCriticModal from '../components/SiteCriticModal';
+import ProjectSnapshotsModal from '../components/ProjectSnapshotsModal';
+import AiCodeInsightModal from '../components/AiCodeInsightModal';
+import AiErrorFallbackModal from '../components/AiErrorFallbackModal';
+import TestSuggestionModal from '../components/TestSuggestionModal';
 import { Spinner } from '@/components/Spinner';
 import AiCodeDoctorModal from '@/components/AiCodeDoctorModal';
 import { ApiKeyModal } from '@/components/ApiKeyModal';
@@ -415,7 +415,7 @@ export const App = (): JSX.Element => {
   // Effect to check API key on mount
   useEffect(() => {
     // Importação dinâmica para evitar problemas de SSR
-    import('./services/ApiKeyManager').then(({ ApiKeyManager }) => {
+    import('../services/ApiKeyManager').then(({ ApiKeyManager }) => {
       const apiKey = ApiKeyManager.getKeyToUse();
       if (!apiKey) {
         console.warn("Chave da API Gemini não está configurada. Configure VITE_GEMINI_API_KEY no arquivo .env ou use o botão 'API Key' para configurar.");
@@ -469,7 +469,7 @@ export const App = (): JSX.Element => {
     let enhancedPrompt = prompt;
     if (!action && !projectPlan && (htmlCode === initialHtmlBase || !htmlCode.trim())) {
       try {
-        const { mobileAppDetector } = await import('./services/MobileAppDetector');
+        const { mobileAppDetector } = await import('../services/MobileAppDetector');
         const intent = mobileAppDetector.detectMobileIntent(prompt);
         
         if (intent.isMobileApp && intent.confidence >= 70) {

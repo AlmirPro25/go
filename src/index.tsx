@@ -1,7 +1,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { App } from '@/App'; // Changed to named import
+import { App } from './App'; // Import from same directory
 
 function mountApp() {
   const rootElement = document.getElementById('root');
