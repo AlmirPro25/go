@@ -25,10 +25,11 @@ import { ApiKeyManager } from '../../services/ApiKeyManager';
 
 export interface AuroraRequest {
   userPrompt: string;
-  projectType?: 'web' | 'mobile' | 'fullstack' | 'api' | 'microservice';
+  projectType?: 'web' | 'mobile' | 'fullstack' | 'api' | 'microservice' | 'fintech' | 'excellence';
   complexity?: 'simple' | 'medium' | 'complex' | 'enterprise';
   technologies?: string[];
   requirements?: string[];
+  context?: string; // Contexto da Knowledge Base
 }
 
 export interface ArchitectureBlueprint {

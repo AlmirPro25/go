@@ -22,6 +22,7 @@ import {
   type ExcellenceReport
 } from './ExcellenceCore';
 import { AuroraBuilder, type AuroraRequest } from '../aurora-build/core/AuroraBuilder';
+import { knowledgeBase, type KnowledgeQueryResult } from './KnowledgeBase';
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -5722,35 +5723,58 @@ export async function generateAiResponse(
     attachments?: Part[]
 ): Promise<AiServiceResponse> {
 
-    // 🌟 DETECÇÃO DO AURORA BUILDER: Detectar se deve usar Arquiteto + Artesão
-    const auroraKeywords = [
-        'arquitetura', 'estrutura completa', 'projeto profissional',
-        'fullstack completo', 'sistema escalável', 'arquiteto',
-        'estrutura de pastas', 'organização profissional'
-    ];
+    // 🧠 KNOWLEDGE BASE: Consultar base de conhecimento para contexto relevante
+    console.log('🧠 Consultando Knowledge Base...');
+    const knowledgeResults = knowledgeBase.query(userPromptInput);
     
-    const shouldUseAurora = auroraKeywords.some(keyword => 
-        userPromptInput.toLowerCase().includes(keyword)
+    let domainContext = '';
+    let detectedDomains: string[] = [];
+    
+    if (knowledgeResults.length > 0) {
+        detectedDomains = knowledgeResults.map(r => r.domain);
+        console.log(`📚 Domínios detectados: ${detectedDomains.join(', ')}`);
+        
+        // Usar o domínio mais relevante
+        const primaryDomain = knowledgeResults[0];
+        domainContext = primaryDomain.context;
+        
+        console.log(`🎯 Domínio primário: ${primaryDomain.domain} (relevância: ${(primaryDomain.relevance * 100).toFixed(0)}%)`);
+    }
+
+    // 🌟 AURORA BUILDER: Usar para projetos complexos
+    const shouldUseAurora = (
+        detectedDomains.includes('fullstack') || 
+        detectedDomains.includes('fintech') ||
+        userPromptInput.toLowerCase().includes('arquitetura') ||
+        userPromptInput.toLowerCase().includes('projeto profissional')
     ) && (phase === 'generate_code_no_plan' || phase === 'generate_code_from_plan');
     
-    // Se detectou Aurora, usar o Aurora Builder
     if (shouldUseAurora) {
-        console.log('🌟 AURORA BUILDER DETECTADO - Usando Arquiteto + Artesão');
+        console.log('🌟 AURORA BUILDER ATIVADO - Usando Arquiteto + Artesão');
         
         try {
             const aurora = new AuroraBuilder();
+            
+            // Passar contexto da Knowledge Base para o Aurora
             const result = await aurora.build({
                 userPrompt: userPromptInput,
-                projectType: 'fullstack',
-                complexity: 'complex'
+                projectType: detectedDomains[0] as any || 'fullstack',
+                complexity: 'complex',
+                context: domainContext // Injetar conhecimento do domínio
             });
             
-            // Formatar resultado do Aurora como código
+            // Formatar resultado do Aurora
             let auroraCode = `# ${result.blueprint.projectName}\n\n`;
             auroraCode += `${result.blueprint.description}\n\n`;
             auroraCode += `## Arquitetura\n\n`;
             auroraCode += `**Tech Stack:** ${result.blueprint.techStack.join(', ')}\n\n`;
             auroraCode += `**Score de Qualidade:** ${result.totalScore.toFixed(0)}/100\n\n`;
+            
+            if (domainContext) {
+                auroraCode += `## Conhecimento Aplicado\n\n`;
+                auroraCode += `**Domínios:** ${detectedDomains.join(', ')}\n\n`;
+            }
+            
             auroraCode += `## Arquivos Gerados\n\n`;
             
             result.code.files.forEach(file => {
@@ -5774,6 +5798,12 @@ export async function generateAiResponse(
     
     // ⚡ PRINCÍPIO DE EXCELÊNCIA: Adicionar padrões de qualidade ao prompt
     enrichedUserPromptInput = enrichPromptWithExcellencePrinciple(enrichedUserPromptInput);
+    
+    // 🧠 INJETAR CONTEXTO DA KNOWLEDGE BASE
+    if (domainContext) {
+        enrichedUserPromptInput = `${domainContext}\n\n---\n\n${enrichedUserPromptInput}`;
+        console.log('✅ Contexto de domínio injetado no prompt');
+    }
 
     const userPrompt = escapeStringForTemplateLiteral(enrichedUserPromptInput);
     const currentPlan = currentPlanInput ? escapeStringForTemplateLiteral(currentPlanInput) : null;
