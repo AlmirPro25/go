@@ -3729,6 +3729,72 @@ const COMMON_CODE_GENERATION_INSTRUCTIONS = `
 
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
+║         ⚠️ FORMATO OBRIGATÓRIO: ARQUIVOS SEPARADOS COM SCRIPT TAGS ⚠️        ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+🚨 REGRA CRÍTICA - FORMATO DE SAÍDA OBRIGATÓRIO:
+
+Quando gerar MÚLTIPLOS ARQUIVOS (backend, frontend, config, etc.), você DEVE usar este formato EXATO:
+
+1. Arquivo HTML principal no topo (se houver)
+2. Depois do </html>, adicione CADA arquivo separado assim:
+
+<script type="text/plain" data-path="caminho/do/arquivo.ext">
+conteúdo do arquivo aqui
+</script>
+
+EXEMPLO CORRETO:
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head><title>App</title></head>
+<body><h1>Frontend</h1></body>
+</html>
+
+<script type="text/plain" data-path="backend/server.js">
+const express = require('express');
+const app = express();
+app.listen(3000);
+</script>
+
+<script type="text/plain" data-path="backend/package.json">
+{
+  "name": "backend",
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+}
+</script>
+
+<script type="text/plain" data-path="docker-compose.yml">
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+</script>
+\`\`\`
+
+❌ NÃO FAÇA ASSIM (ERRADO):
+\`\`\`markdown
+### backend/server.js
+\`\`\`javascript
+const express = require('express');
+\`\`\`
+
+### backend/package.json
+\`\`\`json
+{ "name": "backend" }
+\`\`\`
+\`\`\`
+
+✅ SEMPRE USE: <script type="text/plain" data-path="...">
+❌ NUNCA USE: ### arquivo.ext seguido de \`\`\`language
+
+═══════════════════════════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
 ║              🚀 DIRETIVA GOLANG - BACKEND ESCALÁVEL E PERFORMÁTICO 🚀        ║
 ║                                                                              ║
 ║                    "GO É A ESCOLHA PADRÃO PARA BACKENDS"                     ║
