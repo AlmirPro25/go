@@ -5763,24 +5763,128 @@ export async function generateAiResponse(
                 context: domainContext // Injetar conhecimento do domínio
             });
             
-            // Formatar resultado do Aurora
-            let auroraCode = `# ${result.blueprint.projectName}\n\n`;
-            auroraCode += `${result.blueprint.description}\n\n`;
-            auroraCode += `## Arquitetura\n\n`;
-            auroraCode += `**Tech Stack:** ${result.blueprint.techStack.join(', ')}\n\n`;
-            auroraCode += `**Score de Qualidade:** ${result.totalScore.toFixed(0)}/100\n\n`;
+            // 🎯 FORMATAR RESULTADO DO AURORA COM ARQUIVOS SEPARADOS
+            // Usar formato <script type="text/plain" data-path="..."> para extração automática
             
-            if (domainContext) {
-                auroraCode += `## Conhecimento Aplicado\n\n`;
-                auroraCode += `**Domínios:** ${detectedDomains.join(', ')}\n\n`;
+            // Encontrar o arquivo HTML principal (index.html ou primeiro .html)
+            const htmlFile = result.code.files.find(f => 
+                f.path === 'index.html' || 
+                f.path.endsWith('.html') ||
+                f.path === 'frontend/index.html' ||
+                f.path === 'frontend/src/index.html'
+            );
+            
+            let auroraCode = '';
+            
+            if (htmlFile) {
+                // Se tem HTML, usar como base e empacotar outros arquivos
+                auroraCode = htmlFile.content;
+                
+                // Adicionar comentário de metadados no início
+                const metadataComment = `<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                    🌟 ${result.blueprint.projectName}                        ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+${result.blueprint.description}
+
+📊 ARQUITETURA:
+Tech Stack: ${result.blueprint.techStack.join(', ')}
+Score de Qualidade: ${result.totalScore.toFixed(0)}/100
+${domainContext ? `Domínios Aplicados: ${detectedDomains.join(', ')}` : ''}
+
+📦 ARQUIVOS INCLUÍDOS:
+${result.code.files.map(f => `- ${f.path}`).join('\n')}
+
+🚀 INSTRUÇÕES:
+1. Este projeto está empacotado em um único arquivo HTML
+2. Os arquivos separados estão em tags <script type="text/plain" data-path="...">
+3. Use o botão "Exportar Projeto" para extrair todos os arquivos
+4. Ou clique em "Ver Arquivos" para navegar pela estrutura
+
+-->\n\n`;
+                
+                auroraCode = metadataComment + auroraCode;
+                
+                // Adicionar outros arquivos como <script type="text/plain">
+                result.code.files.forEach(file => {
+                    if (file.path !== htmlFile.path) {
+                        auroraCode += `\n\n<script type="text/plain" data-path="${file.path}">\n`;
+                        auroraCode += file.content;
+                        auroraCode += `\n</script>`;
+                    }
+                });
+                
+            } else {
+                // Se não tem HTML, criar um wrapper HTML
+                auroraCode = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${result.blueprint.projectName}</title>
+</head>
+<body>
+    <!--
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                                                                              ║
+    ║                    🌟 ${result.blueprint.projectName}                        ║
+    ║                                                                              ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    ${result.blueprint.description}
+    
+    📊 ARQUITETURA:
+    Tech Stack: ${result.blueprint.techStack.join(', ')}
+    Score de Qualidade: ${result.totalScore.toFixed(0)}/100
+    ${domainContext ? `Domínios Aplicados: ${detectedDomains.join(', ')}` : ''}
+    
+    📦 ARQUIVOS INCLUÍDOS:
+    ${result.code.files.map(f => `- ${f.path}`).join('\n    ')}
+    
+    🚀 INSTRUÇÕES:
+    1. Este é um projeto ${result.blueprint.techStack[0]} completo
+    2. Os arquivos estão empacotados abaixo em tags <script type="text/plain">
+    3. Use o botão "Exportar Projeto" para extrair todos os arquivos
+    4. Ou clique em "Ver Arquivos" para navegar pela estrutura
+    -->
+    
+    <div style="font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px;">
+        <h1>🌟 ${result.blueprint.projectName}</h1>
+        <p>${result.blueprint.description}</p>
+        
+        <h2>📊 Arquitetura</h2>
+        <p><strong>Tech Stack:</strong> ${result.blueprint.techStack.join(', ')}</p>
+        <p><strong>Score de Qualidade:</strong> ${result.totalScore.toFixed(0)}/100</p>
+        
+        <h2>📦 Arquivos do Projeto</h2>
+        <ul>
+            ${result.code.files.map(f => `<li><code>${f.path}</code></li>`).join('\n            ')}
+        </ul>
+        
+        <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin-top: 20px;">
+            <strong>💡 Como usar:</strong>
+            <ol>
+                <li>Clique em "Ver Arquivos" no painel lateral</li>
+                <li>Navegue pela estrutura do projeto</li>
+                <li>Clique em "Exportar Projeto" para baixar tudo</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
+
+`;
+                
+                // Adicionar todos os arquivos como <script type="text/plain">
+                result.code.files.forEach(file => {
+                    auroraCode += `\n<script type="text/plain" data-path="${file.path}">\n`;
+                    auroraCode += file.content;
+                    auroraCode += `\n</script>\n`;
+                });
             }
-            
-            auroraCode += `## Arquivos Gerados\n\n`;
-            
-            result.code.files.forEach(file => {
-                auroraCode += `### ${file.path}\n\n`;
-                auroraCode += `\`\`\`${file.language}\n${file.content}\n\`\`\`\n\n`;
-            });
             
             return {
                 type: AiResponseType.CODE,
