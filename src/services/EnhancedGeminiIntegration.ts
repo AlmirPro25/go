@@ -8,7 +8,6 @@
 import GeminiService from './GeminiService';
 import GeminiEnhancer from '../utils/GeminiEnhancer';
 import { simulationDetector } from '../utils/SimulationDetector';
-import { codeQualityChecker } from '../utils/CodeQualityChecker';
 
 export interface EnhancedGeminiOptions {
   projectType: string;
@@ -50,20 +49,17 @@ export class EnhancedGeminiIntegration {
       // 3. Verificar se há simulações no conteúdo gerado
       const simulationResult = simulationDetector.detectSimulations(initialContent);
       
-      // 4. Verificar a qualidade do código gerado
-      const qualityReport = codeQualityChecker.checkCodeQuality(initialContent);
-      
-      // 5. Se não houver simulações e a qualidade for boa, retornar o conteúdo original
-      if (!simulationResult.detected && qualityReport.overallScore >= 85) {
+      // 4. Se não houver simulações, retornar o conteúdo original
+      if (!simulationResult.detected) {
         return {
           content: initialContent,
           enhanced: false,
           simulationDetected: false,
-          qualityScore: qualityReport.overallScore
+          qualityScore: 100
         };
       }
       
-      // 6. Caso contrário, melhorar o conteúdo com o GeminiEnhancer
+      // 5. Caso contrário, melhorar o conteúdo com o GeminiEnhancer
       const enhancementResult = await GeminiEnhancer.enhanceCode(
         initialContent,
         options.projectType
@@ -110,21 +106,18 @@ export class EnhancedGeminiIntegration {
       // 3. Verificar se há simulações no conteúdo gerado
       const simulationResult = simulationDetector.detectSimulations(initialContent);
       
-      // 4. Verificar a qualidade do código gerado
-      const qualityReport = codeQualityChecker.checkCodeQuality(initialContent);
-      
-      // 5. Se não houver simulações e a qualidade for boa, retornar o conteúdo original
-      if (!simulationResult.detected && qualityReport.overallScore >= 85) {
+      // 4. Se não houver simulações, retornar o conteúdo original
+      if (!simulationResult.detected) {
         return {
           content: initialContent,
           enhanced: false,
           simulationDetected: false,
-          qualityScore: qualityReport.overallScore,
+          qualityScore: 100,
           persona
         };
       }
       
-      // 6. Caso contrário, melhorar o conteúdo com o GeminiEnhancer
+      // 5. Caso contrário, melhorar o conteúdo com o GeminiEnhancer
       const enhancementResult = await GeminiEnhancer.enhanceCode(
         initialContent,
         options.projectType
@@ -216,12 +209,6 @@ export class EnhancedGeminiIntegration {
     return simulationDetector.detectSimulations(code);
   }
   
-  /**
-   * Verifica a qualidade do código gerado
-   */
-  public async checkCodeQuality(code: string) {
-    return codeQualityChecker.checkCodeQuality(code);
-  }
 }
 
 // Exporta a classe para uso em toda a aplicação

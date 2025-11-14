@@ -62,12 +62,22 @@ function Create-Project {
     param([hashtable]$Body)
     
     try {
-        $projectId = [guid]::NewGuid().ToString().Substring(0, 8)
         $projectName = $Body.name
         $files = $Body.files
         
-        # Criar diretorio do projeto
-        $projectPath = Join-Path $PROJECTS_DIR $projectId
+        # Sanitizar nome do projeto para usar como nome de pasta
+        $safeName = $projectName -replace '[\\/:*?"<>|]', '_'
+        $safeName = $safeName -replace '\s+', '_'
+        
+        # Adicionar timestamp para garantir unicidade
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        $folderName = "${safeName}_${timestamp}"
+        
+        # Gerar ID único
+        $projectId = [guid]::NewGuid().ToString().Substring(0, 8)
+        
+        # Criar diretorio do projeto com nome legível
+        $projectPath = Join-Path $PROJECTS_DIR $folderName
         New-Item -ItemType Directory -Path $projectPath -Force | Out-Null
         
         # Salvar arquivos no HD

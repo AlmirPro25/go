@@ -166,7 +166,7 @@ Forneça apenas o código corrigido, completo e funcional.`;
   /**
    * Chama a API do Gemini para auto-avaliação
    */
-  private async callGeminiAPI(prompt: string, modelName: string = 'gemini-1.5-flash'): Promise<string> {
+  private async callGeminiAPI(prompt: string, modelName: string = 'gemini-2.5-flash'): Promise<string> {
     try {
       const ai = getGeminiInstance();
       const result = await ai.models.generateContent({
@@ -189,7 +189,7 @@ Forneça apenas o código corrigido, completo e funcional.`;
   ): Promise<SelfEvaluationResult> {
     try {
       const prompt = this.buildSelfEvaluationPrompt(generatedCode, originalPrompt);
-      const response = await this.callGeminiAPI(prompt, 'gemini-1.5-flash');
+      const response = await this.callGeminiAPI(prompt, 'gemini-2.5-flash');
       
       // Parse da resposta JSON
       const evaluationData = JSON.parse(response);
@@ -240,7 +240,7 @@ Forneça apenas o código corrigido, completo e funcional.`;
       
       try {
         const correctionPrompt = this.buildSelfCorrectionPrompt(currentCode, evaluation, originalPrompt);
-        const correctedCode = await this.callGeminiAPI(correctionPrompt, 'gemini-1.5-flash');
+        const correctedCode = await this.callGeminiAPI(correctionPrompt, 'gemini-2.5-flash');
         
         // Auto-avaliar o código corrigido
         const newEvaluation = await this.performSelfEvaluation(correctedCode, originalPrompt);

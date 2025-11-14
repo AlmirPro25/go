@@ -88,7 +88,7 @@ export class UniversalScoringSystem {
     
     try {
       let correctedCode = "";
-      const stream = generateAiResponseStream(correctionPrompt, 'refine_code_no_plan', 'gemini-1.5-flash', false, null, code, null, []);
+      const stream = generateAiResponseStream(correctionPrompt, 'refine_code_no_plan', 'gemini-2.5-flash', false, null, code, null, []);
       
       for await (const chunk of stream) {
         correctedCode += chunk.chunk;

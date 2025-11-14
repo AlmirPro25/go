@@ -101,9 +101,14 @@ export const HTML_EXCELLENCE_CRITERIA: ExcellenceCriteria = {
           score -= 10;
         }
 
+        // 🎯 BÔNUS: Código excepcional pode ultrapassar 100
+        if (score >= 95 && hasSemanticTags && divCount < totalTags * 0.3) {
+          score += 5; // Bônus por estrutura excepcional
+        }
+
         return {
           passed: score >= 70,
-          score: Math.max(0, score),
+          score: Math.max(0, score), // Permite scores > 100
           issues,
           suggestions,
           autoFixable: false
@@ -147,9 +152,17 @@ export const HTML_EXCELLENCE_CRITERIA: ExcellenceCriteria = {
           }
         }
 
+        // 🎯 BÔNUS: Meta tags completas e bem escritas
+        if (score >= 95) {
+          const hasOgTags = /<meta\s+property=["']og:/i.test(html);
+          const hasTwitterTags = /<meta\s+name=["']twitter:/i.test(html);
+          if (hasOgTags) score += 3;
+          if (hasTwitterTags) score += 2;
+        }
+
         return {
           passed: score >= 60,
-          score: Math.max(0, score),
+          score: Math.max(0, score), // Permite scores > 100
           issues,
           suggestions,
           autoFixable: true
@@ -211,9 +224,20 @@ export const HTML_EXCELLENCE_CRITERIA: ExcellenceCriteria = {
           score -= 15;
         }
 
+        // 🎯 BÔNUS: Acessibilidade excepcional
+        if (score >= 95) {
+          const hasAriaLabels = /aria-label|aria-labelledby|aria-describedby/i.test(html);
+          const hasRoles = /role=["'](main|navigation|banner|contentinfo|complementary)/i.test(html);
+          const hasSkipLinks = /skip-to-content|skip-navigation/i.test(html);
+          
+          if (hasAriaLabels) score += 3;
+          if (hasRoles) score += 2;
+          if (hasSkipLinks) score += 5; // Bônus extra por skip links
+        }
+
         return {
           passed: score >= 70,
-          score: Math.max(0, score),
+          score: Math.max(0, score), // Permite scores > 100
           issues,
           suggestions,
           autoFixable: false
@@ -254,9 +278,18 @@ export const HTML_EXCELLENCE_CRITERIA: ExcellenceCriteria = {
           score -= 15;
         }
 
+        // 🎯 BÔNUS: Design responsivo excepcional
+        if (score >= 95 && hasTailwind) {
+          const hasContainerQueries = /@container/i.test(html);
+          const hasFluidTypography = /clamp\(|min\(|max\(/i.test(html);
+          
+          if (hasContainerQueries) score += 5;
+          if (hasFluidTypography) score += 3;
+        }
+
         return {
           passed: score >= 60,
-          score: Math.max(0, score),
+          score: Math.max(0, score), // Permite scores > 100
           issues,
           suggestions,
           autoFixable: false
@@ -306,9 +339,20 @@ export const HTML_EXCELLENCE_CRITERIA: ExcellenceCriteria = {
           score -= 10;
         }
 
+        // 🎯 BÔNUS: Performance excepcional
+        if (score >= 95) {
+          const hasLazyLoading = /loading=["']lazy["']/i.test(html);
+          const hasPreload = /<link[^>]+rel=["']preload["']/i.test(html);
+          const hasMinifiedCode = html.length < 50000 && !html.includes('\n\n\n');
+          
+          if (hasLazyLoading) score += 3;
+          if (hasPreload) score += 2;
+          if (hasMinifiedCode) score += 2;
+        }
+
         return {
           passed: score >= 70,
-          score: Math.max(0, score),
+          score: Math.max(0, score), // Permite scores > 100
           issues,
           suggestions,
           autoFixable: false
@@ -352,9 +396,20 @@ export const HTML_EXCELLENCE_CRITERIA: ExcellenceCriteria = {
           }
         }
 
+        // 🎯 BÔNUS: Segurança excepcional
+        if (score >= 95) {
+          const hasCSP = /<meta[^>]+Content-Security-Policy/i.test(html);
+          const hasSRI = /integrity=["']sha/i.test(html);
+          const hasHTTPS = /https:\/\//i.test(html) && !/http:\/\//i.test(html);
+          
+          if (hasCSP) score += 5; // Bônus grande por CSP
+          if (hasSRI) score += 3;
+          if (hasHTTPS) score += 2;
+        }
+
         return {
           passed: score >= 60,
-          score: Math.max(0, score),
+          score: Math.max(0, score), // Permite scores > 100
           issues,
           suggestions,
           autoFixable: false
@@ -403,9 +458,22 @@ export const HTML_EXCELLENCE_CRITERIA: ExcellenceCriteria = {
           score -= 5;
         }
 
+        // 🎯 BÔNUS: UX excepcional
+        if (score >= 95) {
+          const hasDarkMode = /dark:|prefers-color-scheme/i.test(html);
+          const hasAccessibleFocus = /:focus-visible|focus:ring/i.test(html);
+          const hasReducedMotion = /prefers-reduced-motion/i.test(html);
+          const hasMicroInteractions = /hover:|active:|transform|scale/i.test(html);
+          
+          if (hasDarkMode) score += 3;
+          if (hasAccessibleFocus) score += 2;
+          if (hasReducedMotion) score += 3;
+          if (hasMicroInteractions) score += 2;
+        }
+
         return {
           passed: score >= 70,
-          score: Math.max(0, score),
+          score: Math.max(0, score), // Permite scores > 100
           issues,
           suggestions,
           autoFixable: false

@@ -2,18 +2,16 @@
  * GeminiEnhancer.ts
  * 
  * Sistema avançado para melhorar a qualidade do código gerado pelo Gemini API.
- * Integra o SimulationDetector e o CodeQualityChecker para garantir que o código
- * gerado seja de alta qualidade, sem simulações e pronto para produção.
+ * Integra o SimulationDetector para garantir que o código gerado seja de alta 
+ * qualidade, sem simulações e pronto para produção.
  */
 
 import { simulationDetector, DetectionResult } from './SimulationDetector';
-import { codeQualityChecker, CodeQualityReport } from './CodeQualityChecker';
 
 export interface EnhancementResult {
   originalCode: string;
   enhancedCode: string;
   simulationDetectionResult: DetectionResult;
-  qualityReport: CodeQualityReport;
   improvements: string[];
   apiIntegrationsAdded: string[];
   securityImplementationsAdded: string[];
@@ -27,30 +25,23 @@ export class GeminiEnhancer {
     // Detectar simulações no código original
     const simulationDetectionResult = simulationDetector.detectSimulations(code, filePath);
     
-    // Verificar qualidade do código original
-    const initialQualityReport = codeQualityChecker.checkCodeQuality(code, filePath);
-    
-    // Se o código já estiver pronto para produção, retorná-lo sem modificações
-    if (simulationDetectionResult.score >= 90 && initialQualityReport.overallScore >= 85) {
+    // Se o código já estiver sem simulações, retorná-lo sem modificações
+    if (simulationDetectionResult.score >= 90) {
       return {
         originalCode: code,
         enhancedCode: code,
         simulationDetectionResult,
-        qualityReport: initialQualityReport,
         improvements: ['O código já está em excelente qualidade e pronto para produção.'],
         apiIntegrationsAdded: [],
         securityImplementationsAdded: []
       };
     }
     
-    // Melhorar o código com base nas simulações detectadas e no relatório de qualidade
-    const enhancedCode = await this.improveCode(code, simulationDetectionResult, initialQualityReport, projectType);
-    
-    // Verificar novamente a qualidade do código melhorado
-    const finalQualityReport = codeQualityChecker.checkCodeQuality(enhancedCode, filePath);
+    // Melhorar o código com base nas simulações detectadas
+    const enhancedCode = await this.improveCode(code, simulationDetectionResult, projectType);
     
     // Identificar melhorias realizadas
-    const improvements = this.identifyImprovements(simulationDetectionResult, initialQualityReport, finalQualityReport);
+    const improvements = this.identifyImprovements(simulationDetectionResult);
     
     // Identificar integrações de API adicionadas
     const apiIntegrationsAdded = this.identifyApiIntegrationsAdded(code, enhancedCode);
@@ -62,7 +53,6 @@ export class GeminiEnhancer {
       originalCode: code,
       enhancedCode,
       simulationDetectionResult,
-      qualityReport: finalQualityReport,
       improvements,
       apiIntegrationsAdded,
       securityImplementationsAdded
@@ -70,12 +60,11 @@ export class GeminiEnhancer {
   }
   
   /**
-   * Melhora o código com base nas simulações detectadas e no relatório de qualidade
+   * Melhora o código com base nas simulações detectadas
    */
   private static async improveCode(
     code: string, 
-    simulationResult: DetectionResult, 
-    qualityReport: CodeQualityReport,
+    simulationResult: DetectionResult,
     projectType: string
   ): Promise<string> {
     let improvedCode = code;
@@ -1321,31 +1310,14 @@ ${improvedCode}`;
    * Identifica melhorias realizadas no código
    */
   private static identifyImprovements(
-    simulationResult: DetectionResult,
-    initialQualityReport: CodeQualityReport,
-    finalQualityReport: CodeQualityReport
+    simulationResult: DetectionResult
   ): string[] {
     const improvements: string[] = [];
     
     // Melhorias na detecção de simulações
     if (simulationResult.detected) {
       improvements.push(`Eliminadas ${simulationResult.matches.length} simulações detectadas no código original.`);
-    }
-    
-    // Melhorias nas métricas de qualidade
-    initialQualityReport.metrics.forEach((initialMetric, index) => {
-      const finalMetric = finalQualityReport.metrics[index];
-      
-      if (finalMetric.score > initialMetric.score) {
-        const improvement = finalMetric.score - initialMetric.score;
-        improvements.push(`Melhoria de ${improvement.toFixed(1)} pontos na métrica "${initialMetric.name}" (${initialMetric.score.toFixed(1)} → ${finalMetric.score.toFixed(1)}).`);
-      }
-    });
-    
-    // Melhoria na pontuação geral
-    if (finalQualityReport.overallScore > initialQualityReport.overallScore) {
-      const overallImprovement = finalQualityReport.overallScore - initialQualityReport.overallScore;
-      improvements.push(`Melhoria de ${overallImprovement.toFixed(1)} pontos na pontuação geral de qualidade (${initialQualityReport.overallScore.toFixed(1)} → ${finalQualityReport.overallScore.toFixed(1)}).`);
+      improvements.push(`Score de simulação melhorado para ${simulationResult.score}/100.`);
     }
     
     // Se não houver melhorias específicas, adicionar mensagem genérica

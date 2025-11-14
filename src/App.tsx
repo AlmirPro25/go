@@ -741,15 +741,7 @@ ${prompt}
           }
           leftPanel={
             <div className="flex flex-col h-full">
-              {/* Sistema de Pontuação em cima do editor */}
-              {currentScore && (
-                <ScorePanel
-                  score={currentScore}
-                  onClose={() => useAppStore.setState({ currentScore: null })}
-                />
-              )}
-              
-              {/* Auto-avaliação em cima do editor */}
+              {/* 🟡 Painel Amarelo Unificado (Score + Avaliação) */}
               {autoCritiqueResult && (
                 <AutoCritiquePanel
                   critique={autoCritiqueResult}
@@ -1044,14 +1036,7 @@ ${prompt}
         />
       )}
 
-      {/* Sistema de Pontuação Mobile */}
-      {currentScore && (
-        <ScorePanel
-          score={currentScore}
-          onClose={() => useAppStore.setState({ currentScore: null })}
-        />
-      )}
-
+      {/* 🟡 Painel Amarelo Unificado Mobile (Score + Avaliação) */}
       {autoCritiqueResult && (
         <AutoCritiquePanel
           critique={autoCritiqueResult}

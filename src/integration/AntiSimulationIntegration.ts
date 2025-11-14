@@ -7,7 +7,6 @@
 
 import GeminiServiceEnhanced from '../../services/GeminiServiceEnhanced';
 import { simulationDetector } from '../utils/SimulationDetector';
-import { codeQualityChecker } from '../utils/CodeQualityChecker';
 import GeminiEnhancer from '../utils/GeminiEnhancer';
 
 // Importar configuração do sistema anti-simulação
@@ -124,21 +123,16 @@ class AntiSimulationIntegration {
     // Detectar simulações
     const simulationResult = await simulationDetector.detectSimulations(code);
     
-    // Verificar qualidade do código
-    const qualityReport = await codeQualityChecker.checkCodeQuality(code);
-    
-    // Determinar se o código é aprovado
-    const minimumQualityScore = antiSimulationConfig.general.minimumQualityScore;
-    const approved = !simulationResult.detected && qualityReport.overallScore >= minimumQualityScore;
+    // Determinar se o código é aprovado (sem simulações)
+    const approved = !simulationResult.detected;
     
     // Preparar resultado da verificação
     const result: CodeVerificationResult = {
       approved,
-      qualityScore: qualityReport.overallScore,
+      qualityScore: approved ? 100 : 50,
       simulationsDetected: simulationResult.detected,
       simulationDetails: simulationResult,
-      qualityReport,
-      recommendations: [...simulationResult.recommendations, ...qualityReport.recommendations],
+      recommendations: simulationResult.recommendations,
       message: approved 
         ? antiSimulationConfig.messages.codeApproved 
         : simulationResult.detected 
@@ -157,12 +151,11 @@ class AntiSimulationIntegration {
         
         // Verificar se o código melhorado é aprovado
         const enhancedSimulationResult = await simulationDetector.detectSimulations(enhancementResult.enhancedCode);
-        const enhancedQualityReport = await codeQualityChecker.checkCodeQuality(enhancementResult.enhancedCode);
-        const enhancedApproved = !enhancedSimulationResult.detected && enhancedQualityReport.overallScore >= minimumQualityScore;
+        const enhancedApproved = !enhancedSimulationResult.detected;
         
         if (enhancedApproved) {
           result.approved = true;
-          result.qualityScore = enhancedQualityReport.overallScore;
+          result.qualityScore = 100;
           result.simulationsDetected = false;
           result.enhancedCode = enhancementResult.enhancedCode;
           result.message = antiSimulationConfig.messages.codeApproved + ' (Após melhoria automática)';

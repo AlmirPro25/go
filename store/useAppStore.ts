@@ -30,7 +30,6 @@ import {
     type AiPersona,
 } from '@/services/GeminiService';
 import { AiResponseType } from '@/services/GeminiServiceEnhanced';
-import { ArtisanValidator } from '@/services/ArtisanValidator';
 import {
     generateProductionReadyCode,
     generateFrontendOnly,
@@ -981,6 +980,34 @@ function combineFrontendAndBackend(frontendHtml: string, backendSnippets: string
     return `<!DOCTYPE html>\n` + doc.documentElement.outerHTML;
 }
 
+/**
+ * Remove markdown wrapper (```html ... ```) do código HTML
+ */
+const cleanMarkdownWrapper = (code: string): string => {
+    return code.replace(/^```html\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+};
+
+/**
+ * Atualiza o código HTML e extrai arquivos separados automaticamente
+ * Isso garante que os arquivos embutidos em <script type="text/plain"> sejam extraídos
+ * NOTA: Só extrai arquivos quando a geração está completa (não durante streaming)
+ */
+const updateCodeAndExtractFiles = (code: string, set: any, get: any, extractFiles: boolean = false) => {
+    const cleanedCode = cleanMarkdownWrapper(code);
+    set({ htmlCode: cleanedCode });
+    
+    // Só extrair arquivos se solicitado explicitamente (evita travamento durante streaming)
+    if (extractFiles) {
+        const { appMode } = get();
+        if (appMode === 'chat') {
+            const files = parseFilesFromHtml(cleanedCode);
+            if (files.length > 0) {
+                set({ projectFiles: files });
+            }
+        }
+    }
+};
+
 const parseFilesFromHtml = (htmlContent: string): ProjectFile[] => {
     if (!htmlContent.trim()) return [];
     const parser = new DOMParser();
@@ -1323,56 +1350,72 @@ export const useAppStore = create(immer<AppState & AppActions>((set, get) => ({
         set({ 
             isLoadingCritique: true, 
             autoCritiqueResult: null, 
-            aiStatusMessage: "🎭 FASE 1/4: Validação do Manifesto do Artesão Digital..." 
+            aiStatusMessage: "🎯 FASE 1/3: Avaliação de Qualidade com Sistema Unificado..." 
         });
         
         try {
-            // FASE 1: VALIDAÇÃO DO MANIFESTO DO ARTESÃO DIGITAL
-            console.log('🎭 Executando validação do Manifesto...');
-            const artisanValidation = ArtisanValidator.validateCode(htmlCode, initialPlanPrompt || '');
-            console.log('✅ Validação concluída:', artisanValidation);
+            // FASE 1: AVALIAÇÃO COM SISTEMA UNIFICADO
+            console.log('🎯 Executando avaliação de qualidade...');
+            const { unifiedQualitySystem } = await import('../services/UnifiedQualitySystem');
+            const report = unifiedQualitySystem.evaluate(htmlCode);
+            console.log('✅ Avaliação concluída:', report);
             
             set({ 
-                aiStatusMessage: `🔬 FASE 2/4: Manifesto validado (${artisanValidation.score}/100). Executando crítica IA...` 
+                aiStatusMessage: `🔬 FASE 2/3: Qualidade avaliada (${report.overallScore}/100). Executando crítica IA...` 
             });
             
-            // FASE 2: CRÍTICA TRADICIONAL DA IA
-            const critique = await critiqueGeneratedSite(htmlCode, initialPlanPrompt, projectPlan, selectedTextModel);
-            
-            // FASE 3: COMBINAR VALIDAÇÃO DO MANIFESTO COM CRÍTICA DA IA
-            const combinedCritique = `
-🎭 **VALIDAÇÃO DO MANIFESTO DO ARTESÃO DIGITAL:**
-${artisanValidation.summary}
+            // FASE 2: GERAR CRÍTICA FORMATADA
+            const critique = `
+## 📊 Auto-Avaliação Completa
 
-**PONTUAÇÃO POR PRINCÍPIO:**
-• Experiência Primeiro: ${artisanValidation.principleScores.experience}/100
-• Estrutura Semântica: ${artisanValidation.principleScores.structure}/100  
-• Estilo Adaptativo: ${artisanValidation.principleScores.style}/100
-• Interatividade Reativa: ${artisanValidation.principleScores.interactivity}/100
-• Resiliência: ${artisanValidation.principleScores.resilience}/100
-• Entrega Completa: ${artisanValidation.principleScores.delivery}/100
+### Score Geral: ${report.overallScore}/100 ${report.passed ? '✅' : '⚠️'}
 
-**VIOLAÇÕES ENCONTRADAS:**
-${artisanValidation.violations.map(v => `❌ ${v}`).join('\n')}
+${report.passed ? 
+  '**✅ Código aprovado!** Atingiu o padrão de excelência mínimo.' : 
+  '**⚠️ Código precisa de melhorias** para atingir o padrão de excelência (mínimo 85/100).'}
 
-**SUGESTÕES DE MELHORIA:**
-${artisanValidation.suggestions.map(s => `💡 ${s}`).join('\n')}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🤖 **ANÁLISE COMPLEMENTAR DA IA:**
-${critique}
+### 📈 Métricas Detalhadas
+
+| Métrica              | Score  | Status |
+|---------------------|--------|--------|
+| 🔒 Acessibilidade    | ${report.metrics.accessibility}/100 | ${report.metrics.accessibility >= 85 ? '✅' : '❌'} |
+| ⚡ Performance       | ${report.metrics.performance}/100 | ${report.metrics.performance >= 85 ? '✅' : '❌'} |
+| 🛡️ Segurança         | ${report.metrics.security}/100 | ${report.metrics.security >= 85 ? '✅' : '❌'} |
+| 🧹 Qualidade         | ${report.metrics.codeQuality}/100 | ${report.metrics.codeQuality >= 85 ? '✅' : '❌'} |
+| ✨ Completude        | ${report.metrics.completeness}/100 | ${report.metrics.completeness >= 85 ? '✅' : '❌'} |
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### 🎯 Melhorias Aplicadas/Necessárias
+
+${report.improvements.slice(0, 10).map((imp, i) => `${i + 1}. ${imp}`).join('\n')}
+
+${report.refinementCount > 0 ? `\n✅ Código foi refinado automaticamente ${report.refinementCount}x pelo sistema.\n` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### 💡 Recomendações Priorizadas
+
+${report.recommendations.slice(0, 5).map((rec, i) => `${i + 1}. ${rec}`).join('\n')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Avaliado em: ${new Date(report.evaluatedAt).toLocaleString('pt-BR')}
 `;
             
             set({ 
-                autoCritiqueResult: combinedCritique, 
-                aiStatusMessage: "🎯 FASE 3/4: Análise completa. Aplicando correções automaticamente..." 
+                autoCritiqueResult: critique, 
+                aiStatusMessage: "🎯 FASE 3/3: Análise completa. Aplicando correções automaticamente..." 
             });
             
-            // FASE 4: AUTO-APLICAÇÃO DAS CORREÇÕES (apenas se score < 80)
-            if (artisanValidation.score < 80) {
-                await get().autoApplyCritiqueImprovements(combinedCritique);
+            // FASE 3: AUTO-APLICAÇÃO DAS CORREÇÕES (apenas se score < 85)
+            if (report.overallScore < 85) {
+                await get().autoApplyCritiqueImprovements(critique);
             } else {
                 set({ 
-                    aiStatusMessage: `✅ Código aprovado pelo Manifesto! Pontuação: ${artisanValidation.score}/100 🎭`,
+                    aiStatusMessage: `✅ Código aprovado! Pontuação: ${report.overallScore}/100 🎯`,
                     autoCritiqueResult: null // Limpar crítica se código está bom
                 });
             }
@@ -1666,7 +1709,7 @@ ${htmlCode}
     },
 
     handleApplyCritiqueRefinement: async () => {
-        const { autoCritiqueResult, htmlCode, selectedTextModel } = get();
+        const { autoCritiqueResult, htmlCode, selectedTextModel, currentScore } = get();
         if (!autoCritiqueResult) return;
 
         set({
@@ -1679,7 +1722,93 @@ ${htmlCode}
             autoCritiqueResult: null,
         });
 
-        const refinementPrompt = `Baseado na seguinte crítica, refine o código HTML fornecido. Apenas retorne o código HTML completo e atualizado.\n\nCRÍTICA:\n${autoCritiqueResult}`;
+        // 🎯 PROMPT CIRÚRGICO: Instruções técnicas detalhadas para o sistema
+        const surgicalPrompt = `
+🎯 REFINAMENTO CIRÚRGICO DE CÓDIGO HTML - PADRÃO DE EXCELÊNCIA MÁXIMA
+
+📊 ANÁLISE ATUAL DO CÓDIGO:
+${currentScore ? `
+- Score Geral: ${currentScore.totalScore}/100
+- Acessibilidade: ${currentScore.accessibility}/100
+- Performance: ${currentScore.performance}/100
+- Qualidade: ${currentScore.codeQuality}/100
+- UX: ${currentScore.userExperience}/100
+` : ''}
+
+🎯 OBJETIVO OBRIGATÓRIO: Atingir 100/100 em TODAS as categorias.
+⚡ META ASPIRACIONAL: Superar 100/100 com implementações extras de excelência.
+
+🏆 PADRÃO DE EXCELÊNCIA:
+- 100/100 = MÍNIMO ACEITÁVEL (código perfeito)
+- 110/100 = EXCELENTE (código perfeito + otimizações extras)
+- 125/100 = EXCEPCIONAL (código perfeito + inovações)
+- 150/100 = OBRA-PRIMA (código perfeito + experiência memorável)
+
+🚨 CÓDIGO SÓ É APROVADO COM 100/100 EM TODAS AS CATEGORIAS.
+
+⚡ INSTRUÇÕES CIRÚRGICAS OBRIGATÓRIAS:
+
+1. **ACESSIBILIDADE (Prioridade MÁXIMA):**
+   - ADICIONE atributo "alt" descritivo em TODAS as tags <img>
+   - ADICIONE atributo "lang='pt-BR'" na tag <html> se não existir
+   - ADICIONE <label> associado a TODOS os <input> via atributo "for"
+   - ADICIONE atributos ARIA quando necessário (aria-label, aria-describedby)
+   - VERIFIQUE contraste de cores (mínimo 4.5:1 para texto normal)
+
+2. **META TAGS ESSENCIAIS:**
+   - ADICIONE na <head> se não existir:
+     * <meta charset="UTF-8">
+     * <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     * <meta name="description" content="[descrição relevante do site]">
+   - ADICIONE <title> descritivo (mínimo 30 caracteres)
+
+3. **ESTRUTURA SEMÂNTICA:**
+   - SUBSTITUA <div> genéricos por tags semânticas:
+     * <header> para cabeçalho
+     * <nav> para navegação
+     * <main> para conteúdo principal
+     * <article> para artigos/posts
+     * <section> para seções
+     * <aside> para conteúdo lateral
+     * <footer> para rodapé
+
+4. **PERFORMANCE:**
+   - ADICIONE atributos "async" ou "defer" em tags <script>
+   - ADICIONE "loading='lazy'" em imagens abaixo da dobra
+   - MINIFIQUE CSS inline se muito extenso
+   - REMOVA código duplicado ou não utilizado
+
+5. **SEGURANÇA:**
+   - ADICIONE rel="noopener noreferrer" em links externos (<a target="_blank">)
+   - NUNCA exponha API keys ou segredos no código
+   - VALIDE e sanitize inputs de formulário
+
+6. **RESPONSIVIDADE:**
+   - GARANTA que o design funcione em mobile (320px+)
+   - USE unidades relativas (rem, em, %, vw) em vez de px fixos
+   - ADICIONE media queries se necessário
+
+7. **UX/UI:**
+   - ADICIONE estados de loading para ações assíncronas
+   - ADICIONE mensagens de erro amigáveis
+   - ADICIONE feedback visual para interações (hover, focus, active)
+   - GARANTA que botões tenham tamanho mínimo de 44x44px (área de toque)
+
+🚨 REGRAS CRÍTICAS:
+- MANTENHA toda funcionalidade existente
+- MANTENHA o design e estilo visual
+- NÃO remova código funcional
+- NÃO adicione comentários explicativos
+- RETORNE APENAS o código HTML completo e atualizado
+- APLIQUE TODAS as correções de uma vez
+
+📋 ANÁLISE CONTEXTUAL DO USUÁRIO (para referência):
+${autoCritiqueResult}
+
+🎯 EXECUTE AS CORREÇÕES AGORA:
+`;
+
+        const refinementPrompt = surgicalPrompt;
 
         try {
             let finalCode = "";
@@ -1941,8 +2070,9 @@ REGENERE AGORA COM QUALIDADE ENTERPRISE.`;
 
             get().updateStatusProgress(100);
 
-            // Mostrar código gerado imediatamente no preview
-            set({ htmlCode: result.code });
+            // Mostrar código gerado imediatamente no preview (limpar markdown wrapper)
+            // Extrair arquivos DEPOIS que a geração estiver completa
+            updateCodeAndExtractFiles(result.code, set, get, true);
 
             // Atualizar editor Monaco também
             const editorRef = (window as any).globalEditorRef;
@@ -2021,17 +2151,103 @@ REGENERE AGORA COM QUALIDADE ENTERPRISE.`;
             get().logInteraction(actualPrompt, finalCode, 'anti_simulation_generation');
 
             // Auto-crítica do código gerado
+            // 🎯 SISTEMA HÍBRIDO: UnifiedQualitySystem (score) + critiqueGeneratedSite (conversacional)
             setTimeout(async () => {
                 try {
+                    console.log('🎯 Iniciando sistema híbrido de auto-avaliação...');
                     set({ isLoadingCritique: true });
-                    const { projectPlan, selectedTextModel } = get();
-                    const critique = await critiqueGeneratedSite(finalCode, actualPrompt, projectPlan, selectedTextModel);
+                    
+                    // FASE 1: Avaliar com UnifiedQualitySystem (score objetivo)
+                    console.log('📊 FASE 1: Avaliando com UnifiedQualitySystem...');
+                    const { unifiedQualitySystem } = await import('../services/UnifiedQualitySystem');
+                    const report = unifiedQualitySystem.evaluate(finalCode);
+                    console.log('✅ FASE 1 concluída. Score:', report.overallScore);
+                    
+                    // FASE 2: Gerar crítica conversacional com IA (feedback detalhado)
+                    console.log('🤖 FASE 2: Gerando crítica conversacional com IA...');
+                    const aiCritique = await critiqueGeneratedSite(
+                        finalCode,
+                        actualPrompt,
+                        projectPlan,
+                        selectedTextModel
+                    );
+                    console.log('✅ FASE 2 concluída. Crítica gerada.');
+                    
+                    // FASE 3: Combinar os dois sistemas em um painel híbrido SEMPRE VISÍVEL
+                    const hybridCritique = `
+## 🎯 Auto-Avaliação Inteligente (Score: ${report.overallScore}/100 ${report.passed ? '✅' : '⚠️'})
+
+${report.passed ? 
+  '**✅ Código Aprovado!** Atingiu o padrão de excelência (85+/100).' : 
+  '**⚠️ Código Precisa de Melhorias** para atingir o padrão de excelência.'}
+
+---
+
+### 📊 Pontuação por Categoria
+
+| Categoria | Score | Status |
+|-----------|-------|--------|
+| 🔒 **Acessibilidade** | **${report.metrics.accessibility}**/100 | ${report.metrics.accessibility >= 85 ? '✅ Excelente' : report.metrics.accessibility >= 70 ? '⚡ Bom' : '🔧 Precisa Melhorar'} |
+| ⚡ **Performance** | **${report.metrics.performance}**/100 | ${report.metrics.performance >= 85 ? '✅ Excelente' : report.metrics.performance >= 70 ? '⚡ Bom' : '🔧 Precisa Melhorar'} |
+| 🛡️ **Segurança** | **${report.metrics.security}**/100 | ${report.metrics.security >= 85 ? '✅ Excelente' : report.metrics.security >= 70 ? '⚡ Bom' : '🔧 Precisa Melhorar'} |
+| 🧹 **Qualidade** | **${report.metrics.codeQuality}**/100 | ${report.metrics.codeQuality >= 85 ? '✅ Excelente' : report.metrics.codeQuality >= 70 ? '⚡ Bom' : '🔧 Precisa Melhorar'} |
+| ✨ **Completude** | **${report.metrics.completeness}**/100 | ${report.metrics.completeness >= 85 ? '✅ Excelente' : report.metrics.completeness >= 70 ? '⚡ Bom' : '🔧 Precisa Melhorar'} |
+
+---
+
+### 🤖 Análise Detalhada da IA
+
+${aiCritique}
+
+---
+
+### 🎯 Melhorias ${report.refinementCount > 0 ? 'Aplicadas Automaticamente' : 'Recomendadas'}
+
+${report.improvements.length > 0 ? 
+  report.improvements.slice(0, 8).map((imp, i) => `${i + 1}. ${imp.replace(/[*_]/g, '')}`).join('\n') :
+  '✨ Nenhuma melhoria necessária. Código está excelente!'}
+
+${report.refinementCount > 0 ? `\n**✅ Sistema refinhou automaticamente ${report.refinementCount}x para atingir qualidade máxima.**` : ''}
+
+---
+
+### 💡 Próximos Passos Sugeridos
+
+${report.recommendations.length > 0 ?
+  report.recommendations.slice(0, 5).map((rec, i) => `${i + 1}. ${rec.replace(/[*_]/g, '')}`).join('\n') :
+  '🎉 Parabéns! Código está perfeito. Nenhuma ação adicional necessária.'}
+
+---
+
+**📅 Avaliado em:** ${new Date(report.evaluatedAt).toLocaleString('pt-BR')}  
+**🤖 Sistema:** UnifiedQualitySystem + Gemini AI  
+**⚡ Tempo de Análise:** ${report.refinementCount > 0 ? 'Com refinamento automático' : 'Análise única'}
+`;
+                    
+                    console.log('🎯 FASE 3: Combinando sistemas...');
+                    console.log('📊 Painel híbrido gerado com sucesso!');
+                    console.log('📝 Tamanho da crítica:', hybridCritique.length, 'caracteres');
+                    console.log('🟡 PAINEL AMARELO DEVE APARECER AGORA!');
+                    
                     set({
-                        autoCritiqueResult: critique,
+                        autoCritiqueResult: hybridCritique,
+                        currentScore: {
+                            performance: report.metrics.performance,
+                            accessibility: report.metrics.accessibility,
+                            responsiveness: report.metrics.performance, // Usar performance como proxy
+                            codeQuality: report.metrics.codeQuality,
+                            userExperience: report.metrics.completeness,
+                            totalScore: report.overallScore,
+                            improvements: report.improvements.slice(0, 5).map(imp => imp.replace(/[*_]/g, '').substring(0, 50)),
+                            metrics: report.metrics
+                        },
                         isLoadingCritique: false
                     });
+                    
+                    console.log('🎯 Painel híbrido gerado: Score objetivo + Feedback conversacional da IA');
+                    
                 } catch (error) {
-                    console.error('Erro na auto-crítica:', error);
+                    console.error('Erro na auto-crítica híbrida:', error);
                     set({ isLoadingCritique: false });
                 }
             }, 2000);
@@ -2298,8 +2514,9 @@ REGENERE AGORA COM QUALIDADE ENTERPRISE.`;
                     for await (const chunk of stream) {
                         finalCode += chunk.chunk;
 
-                        // PRIMEIRO: Atualizar o htmlCode principal (para o preview)
-                        set({ htmlCode: finalCode });
+                        // PRIMEIRO: Limpar markdown wrapper e atualizar código
+                        // Extrair arquivos DEPOIS que a geração estiver completa
+                        updateCodeAndExtractFiles(finalCode, set, get, true);
 
                         // SEGUNDO: Atualizar o editor Monaco DIRETAMENTE via editorRef
                         const editorRef = (window as any).globalEditorRef;
@@ -2396,6 +2613,16 @@ REGENERE AGORA COM QUALIDADE ENTERPRISE.`;
                     // Removido temporariamente para simplificar
 
                     set({ htmlCode: finalCodeWithMedia, projectPlan: null, currentAppPhase: 'CODE_GENERATED', aiStatusMessage: '✅ Código gerado com sucesso! Site pronto para visualização e edição.' });
+                    
+                    // Extrair arquivos separados DEPOIS que tudo estiver pronto
+                    const { appMode } = get();
+                    if (appMode === 'chat') {
+                        const files = parseFilesFromHtml(finalCodeWithMedia);
+                        if (files.length > 0) {
+                            set({ projectFiles: files });
+                        }
+                    }
+                    
                     setTimeout(() => get().clearDetailedStatus(), 3000);
                     
                     // Ativar auto-avaliador após geração normal
@@ -2419,8 +2646,9 @@ REGENERE AGORA COM QUALIDADE ENTERPRISE.`;
                 for await (const chunk of stream) {
                     finalCode += chunk.chunk;
 
-                    // Atualizar preview
-                    set({ htmlCode: finalCode });
+                    // Limpar markdown wrapper e atualizar código
+                    // NÃO extrair arquivos durante streaming (causa travamento)
+                    updateCodeAndExtractFiles(finalCode, set, get, false);
 
                     // Atualizar editor Monaco DIRETAMENTE
                     const editorRef = (window as any).globalEditorRef;
@@ -2503,6 +2731,16 @@ REGENERE AGORA COM QUALIDADE ENTERPRISE.`;
                 const finalCodeWithMedia = await postProcessHtmlWithMedia(finalCodeWithImages);
 
                 set({ htmlCode: finalCodeWithMedia, currentAppPhase: 'CODE_GENERATED', aiStatusMessage: 'Código refinado com sucesso!' });
+                
+                // Extrair arquivos separados DEPOIS que tudo estiver pronto
+                const { appMode } = get();
+                if (appMode === 'chat') {
+                    const files = parseFilesFromHtml(finalCodeWithMedia);
+                    if (files.length > 0) {
+                        set({ projectFiles: files });
+                    }
+                }
+                
                 await get().critiqueGeneratedCode();
             }
 
@@ -3421,9 +3659,16 @@ Crie um plano detalhado usando a pesquisa e a paleta selecionada.
                     projectPlan: planResponse.content,
                     projectPlanSources: planResponse.sources || null,
                     currentAppPhase: 'PLAN_DISPLAYED',
-                    aiStatusMessage: '📋 Plano criado! Clique em "Gerar Código" para continuar.',
-                    isLoadingAi: false
+                    aiStatusMessage: '📋 Plano criado! Gerando código...',
+                    isLoadingAi: true // Manter loading para continuar gerando
                 });
+                
+                // ✅ CORREÇÃO: Gerar código automaticamente após o plano
+                // Em vez de esperar um botão que não existe
+                console.log('🚀 Gerando código automaticamente após plano...');
+                
+                // Chamar handleAiCommand com action GENERATE_CODE_FROM_PLAN
+                await get().handleAiCommand(lastUserPromptForLog, 'GENERATE_CODE_FROM_PLAN');
             }
         } catch (error) {
             console.error('Erro ao criar plano:', error);
@@ -3913,19 +4158,16 @@ O backend deve servir EXATAMENTE o que o frontend precisa!
             });
             get().setDetailedStatus('Avaliação', 'API Call 5', 'Chamada dedicada para avaliação...', 80, 20);
 
-            const critiqueResponse = await generateAiResponse(
-                `PROJETO FULLSTACK COMPLETO:\n${finalCodeWithMedia}\n\nREALIZE AUTO-AVALIAÇÃO COMPLETA:\n- Qualidade do código\n- Funcionalidades implementadas\n- Integração frontend-backend\n- Documentação\n- Pontos fortes\n- Melhorias sugeridas\n- Score de 0-100`, 
-                'critique', 
-                selectedTextModel, 
-                null, 
-                finalCodeWithMedia, 
-                prompt, 
-                null, 
-                attachmentParts
+            // Usar critiqueGeneratedSite em vez de generateAiResponse com fase inválida
+            const critiqueContent = await critiqueGeneratedSite(
+                finalCodeWithMedia,
+                prompt,
+                null, // projectPlan
+                selectedTextModel
             );
 
             set({
-                autoCritiqueResult: critiqueResponse.content,
+                autoCritiqueResult: critiqueContent,
                 isLoadingCritique: false
             });
             get().updateStatusProgress(100);
@@ -4346,19 +4588,16 @@ Crie um sistema COMPLETO e FUNCIONAL pronto para produção!
             });
             get().setDetailedStatus('Avaliação', 'Auto-avaliação', 'Realizando auto-avaliação final...', 90, 10);
 
-            const critiqueResponse = await generateAiResponse(
-                `PROJETO FULLSTACK COMPLETO:\n${finalCodeWithMedia}\n\nREALIZE AUTO-AVALIAÇÃO COMPLETA:\n- Qualidade do código\n- Funcionalidades implementadas\n- Integração frontend-backend\n- Documentação\n- Pontos fortes\n- Melhorias sugeridas\n- Score de 0-100`, 
-                'critique', 
-                selectedTextModel, 
-                null, 
-                finalCodeWithMedia, 
-                prompt, 
-                null, 
-                attachmentParts
+            // Usar critiqueGeneratedSite em vez de generateAiResponse com fase inválida
+            const critiqueContent = await critiqueGeneratedSite(
+                finalCodeWithMedia,
+                prompt,
+                null, // projectPlan
+                selectedTextModel
             );
 
             set({
-                autoCritiqueResult: critiqueResponse.content,
+                autoCritiqueResult: critiqueContent,
                 isLoadingCritique: false
             });
             get().updateStatusProgress(100);
@@ -4380,11 +4619,17 @@ Crie um sistema COMPLETO e FUNCIONAL pronto para produção!
         } catch (error: any) {
             console.error('❌ Erro no sistema FullStack Unificado:', error);
             
+            // Mensagem mais clara para erro 503
+            let errorMessage = error.message;
+            if (error.message?.includes('503') || error.message?.includes('overloaded')) {
+                errorMessage = '⚠️ Servidor do Gemini está sobrecarregado. Aguarde alguns segundos e tente novamente. Dica: Use prompts mais simples ou tente em horários de menor uso.';
+            }
+            
             set({
                 isLoadingAi: false,
                 isLoadingCritique: false,
                 currentAppPhase: 'AI_ERROR_STATE',
-                aiStatusMessage: `❌ Erro no sistema FullStack Unificado: ${error.message}`
+                aiStatusMessage: `❌ ${errorMessage}`
             });
             get().clearDetailedStatus();
         }

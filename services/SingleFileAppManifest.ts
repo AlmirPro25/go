@@ -579,23 +579,49 @@ Você é um gerador automático de micro-apps single-file. Recebe um manifesto J
  * Função para detectar se o usuário está pedindo um app single-file
  */
 export function detectSingleFileAppRequest(prompt: string): boolean {
-  const keywords = [
+  const lowerPrompt = prompt.toLowerCase();
+  
+  // ❌ NÃO é single-file se mencionar backend, API, banco de dados, fullstack
+  const fullstackKeywords = [
+    'backend',
+    'api',
+    'banco de dados',
+    'database',
+    'fullstack',
+    'full-stack',
+    'servidor',
+    'server',
+    'nestjs',
+    'express',
+    'prisma',
+    'mongodb',
+    'postgresql',
+    'mysql',
+    'docker',
+    'microservices'
+  ];
+  
+  if (fullstackKeywords.some(keyword => lowerPrompt.includes(keyword))) {
+    return false; // É um projeto fullstack, NÃO é single-file
+  }
+  
+  // ✅ É single-file apenas se mencionar explicitamente
+  const singleFileKeywords = [
     'single file',
     'único arquivo',
-    'um arquivo',
-    'index.html',
+    'um arquivo só',
+    'tudo em um arquivo',
+    'index.html apenas',
     'portátil',
     'offline',
     'standalone',
     'self-contained',
-    'micro-app',
-    'mini app',
-    'app simples',
-    'app leve'
+    'sem backend',
+    'sem servidor',
+    'frontend only'
   ];
   
-  const lowerPrompt = prompt.toLowerCase();
-  return keywords.some(keyword => lowerPrompt.includes(keyword));
+  return singleFileKeywords.some(keyword => lowerPrompt.includes(keyword));
 }
 
 /**
