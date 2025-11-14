@@ -5699,6 +5699,133 @@ export async function postProcessHtmlWithMedia(html: string): Promise<string> {
 
 
 /**
+ * Formata código com múltiplos arquivos em blocos markdown para o formato <script type="text/plain">
+ * Detecta padrões como:
+ * ### caminho/arquivo.ext
+ * ```language
+ * código...
+ * ```
+ */
+function formatMultipleFilesToScriptTags(content: string): string {
+    // Regex para detectar blocos de arquivo: ### caminho seguido de ```language
+    const fileBlockRegex = /###\s+([^\n]+)\n\s*```(\w+)?\n([\s\S]*?)```/g;
+    
+    const matches = Array.from(content.matchAll(fileBlockRegex));
+    
+    // Se não encontrou padrão de múltiplos arquivos, retornar original
+    if (matches.length === 0) {
+        return content;
+    }
+    
+    console.log(`🔄 Detectados ${matches.length} arquivos em blocos markdown. Convertendo para script tags...`);
+    
+    // Encontrar o arquivo HTML principal (se existir)
+    let htmlFile = matches.find(m => 
+        m[1].toLowerCase().includes('index.html') || 
+        m[1].toLowerCase().endsWith('.html')
+    );
+    
+    let result = '';
+    
+    if (htmlFile) {
+        // Usar HTML como base
+        result = htmlFile[3].trim();
+        
+        // Adicionar metadados
+        const metadata = `<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    📦 PROJETO COMPLETO - ARQUIVOS SEPARADOS                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📦 ARQUIVOS INCLUÍDOS:
+${matches.map(m => `- ${m[1].trim()}`).join('\n')}
+
+🚀 INSTRUÇÕES:
+1. Este projeto está empacotado em um único arquivo HTML
+2. Os arquivos separados estão em tags <script type="text/plain" data-path="...">
+3. Use o botão "Exportar Projeto" para extrair todos os arquivos
+4. Ou clique em "Ver Arquivos" para navegar pela estrutura
+
+-->\n\n`;
+        
+        result = metadata + result;
+        
+        // Adicionar outros arquivos como script tags
+        matches.forEach(match => {
+            const filePath = match[1].trim();
+            const fileContent = match[3].trim();
+            
+            if (filePath !== htmlFile![1].trim()) {
+                result += `\n\n<script type="text/plain" data-path="${filePath}">\n`;
+                result += fileContent;
+                result += `\n</script>`;
+            }
+        });
+        
+    } else {
+        // Sem HTML, criar wrapper
+        result = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto Completo</title>
+</head>
+<body>
+    <!--
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║                    📦 PROJETO COMPLETO - ARQUIVOS SEPARADOS                  ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+    
+    📦 ARQUIVOS INCLUÍDOS:
+    ${matches.map(m => `- ${m[1].trim()}`).join('\n    ')}
+    
+    🚀 INSTRUÇÕES:
+    1. Este é um projeto completo empacotado
+    2. Os arquivos estão em tags <script type="text/plain" data-path="...">
+    3. Use o botão "Exportar Projeto" para extrair todos os arquivos
+    4. Ou clique em "Ver Arquivos" para navegar pela estrutura
+    -->
+    
+    <div style="font-family: system-ui; max-width: 800px; margin: 50px auto; padding: 20px;">
+        <h1>📦 Projeto Completo</h1>
+        <p>Este projeto contém múltiplos arquivos empacotados.</p>
+        
+        <h2>📦 Arquivos do Projeto</h2>
+        <ul>
+            ${matches.map(m => `<li><code>${m[1].trim()}</code></li>`).join('\n            ')}
+        </ul>
+        
+        <div style="background: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin-top: 20px;">
+            <strong>💡 Como usar:</strong>
+            <ol>
+                <li>Clique em "Ver Arquivos" no painel lateral</li>
+                <li>Navegue pela estrutura do projeto</li>
+                <li>Clique em "Exportar Projeto" para baixar tudo</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
+
+`;
+        
+        // Adicionar todos os arquivos como script tags
+        matches.forEach(match => {
+            const filePath = match[1].trim();
+            const fileContent = match[3].trim();
+            
+            result += `\n<script type="text/plain" data-path="${filePath}">\n`;
+            result += fileContent;
+            result += `\n</script>\n`;
+        });
+    }
+    
+    console.log('✅ Código formatado com script tags para extração automática');
+    return result;
+}
+
+/**
  * Obtém modelos alternativos para fallback quando um modelo está sobrecarregado
  * APENAS modelos Gemini 2.5 (versões mais recentes e estáveis)
  */
@@ -6193,7 +6320,15 @@ O código refinado DEVE atingir score mínimo de 85/100.
                 }
             }
             
-            return { type: expectedResponseType, content: cleanedContent };
+            // 🎯 PÓS-PROCESSAMENTO: Formatar arquivos separados se necessário
+            let finalContent = cleanedContent;
+            
+            // Se o código contém múltiplos arquivos em blocos markdown, converter para script tags
+            if (expectedResponseType === AiResponseType.CODE && cleanedContent.includes('```')) {
+                finalContent = formatMultipleFilesToScriptTags(cleanedContent);
+            }
+            
+            return { type: expectedResponseType, content: finalContent };
 
         } catch (error) {
             lastError = error as Error;
