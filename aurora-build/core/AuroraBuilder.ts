@@ -18,6 +18,7 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ApiKeyManager } from '../../services/ApiKeyManager';
+import { DISTRIBUTED_MESH_NETWORK_MANIFEST } from '../../services/manifestos/DISTRIBUTED_MESH_NETWORK_MANIFEST';
 
 // ============================================
 // TIPOS E INTERFACES
@@ -25,11 +26,12 @@ import { ApiKeyManager } from '../../services/ApiKeyManager';
 
 export interface AuroraRequest {
   userPrompt: string;
-  projectType?: 'web' | 'mobile' | 'fullstack' | 'api' | 'microservice' | 'fintech' | 'excellence';
+  projectType?: 'web' | 'mobile' | 'fullstack' | 'api' | 'microservice' | 'fintech' | 'excellence' | 'distributed';
   complexity?: 'simple' | 'medium' | 'complex' | 'enterprise';
   technologies?: string[];
   requirements?: string[];
   context?: string; // Contexto da Knowledge Base
+  isDistributed?: boolean; // Sistema distribuído/cluster
 }
 
 export interface ArchitectureBlueprint {
@@ -109,6 +111,13 @@ export class AuroraBuilder {
     this.log('🌟 AURORA BUILDER INICIADO');
     this.log(`📝 Prompt: ${request.userPrompt}`);
     
+    // Detectar se é sistema distribuído
+    const isDistributed = this.detectDistributedSystem(request);
+    if (isDistributed) {
+      this.log('🌐 SISTEMA DISTRIBUÍDO DETECTADO - Ativando Manifesto Mesh Network');
+      request.isDistributed = true;
+    }
+    
     try {
       // FASE 1: ARQUITETO - Criar arquitetura
       this.log('\n🏗️ FASE 1: ARQUITETO - Criando arquitetura...');
@@ -141,6 +150,25 @@ export class AuroraBuilder {
       this.log(`❌ ERRO: ${error}`);
       throw error;
     }
+  }
+  
+  /**
+   * 🌐 Detecta se o pedido é para sistema distribuído
+   */
+  private detectDistributedSystem(request: AuroraRequest): boolean {
+    const distributedKeywords = [
+      'distribuído', 'cluster', 'escalabilidade infinita',
+      'vários servidores', 'alta disponibilidade', 'sharding',
+      'multi-node', 'cockroachdb', 'kubernetes', 'swarm',
+      'auto-discovery', 'gossip protocol', 'sem ponto de falha',
+      'conectar automaticamente', 'unificar servidores',
+      'distributed', 'high availability', 'auto-clustering',
+      'mesh network', 'p2p', 'peer-to-peer'
+    ];
+    
+    const promptLower = request.userPrompt.toLowerCase();
+    return distributedKeywords.some(keyword => promptLower.includes(keyword)) ||
+           request.projectType === 'distributed';
   }
   
   /**
@@ -190,6 +218,27 @@ export class AuroraBuilder {
    * 📝 Constrói prompt para o Arquiteto
    */
   private buildArchitectPrompt(request: AuroraRequest): string {
+    // Se for sistema distribuído, adicionar manifesto mesh
+    const meshManifesto = request.isDistributed ? `
+${DISTRIBUTED_MESH_NETWORK_MANIFEST}
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ ATENÇÃO: SISTEMA DISTRIBUÍDO DETECTADO
+═══════════════════════════════════════════════════════════════════════════════
+
+Você DEVE criar uma arquitetura MESH NETWORK com:
+1. ✅ Backend em Go com hashicorp/memberlist (Gossip Protocol)
+2. ✅ CockroachDB (banco de dados distribuído)
+3. ✅ Docker Compose com múltiplos nós (mínimo 3)
+4. ✅ Load Balancer (Nginx ou Traefik)
+5. ✅ Auto-descoberta de nós
+6. ✅ Sincronização automática (CRDT)
+7. ✅ Backup automático entre nós
+8. ✅ Failover automático
+
+═══════════════════════════════════════════════════════════════════════════════
+` : '';
+    
     return `
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🏗️ MODO ARQUITETO ATIVADO 🏗️                             ║
@@ -199,11 +248,14 @@ Você é um ARQUITETO DE SOFTWARE SÊNIOR com 15+ anos de experiência.
 
 Sua missão: Analisar o pedido do usuário e criar uma ARQUITETURA COMPLETA.
 
+${meshManifesto}
+
 📝 PEDIDO DO USUÁRIO:
 "${request.userPrompt}"
 
 🎯 TIPO DE PROJETO: ${request.projectType || 'detectar automaticamente'}
 📊 COMPLEXIDADE: ${request.complexity || 'detectar automaticamente'}
+${request.isDistributed ? '🌐 SISTEMA DISTRIBUÍDO: SIM (Mesh Network)' : ''}
 
 ═══════════════════════════════════════════════════════════════════════════════
 
@@ -324,6 +376,82 @@ Retorne APENAS o JSON, sem texto adicional.
     blueprint: ArchitectureBlueprint,
     request: AuroraRequest
   ): string {
+    // Se for sistema distribuído, adicionar instruções específicas
+    const meshInstructions = request.isDistributed ? `
+═══════════════════════════════════════════════════════════════════════════════
+🌐 INSTRUÇÕES PARA SISTEMA DISTRIBUÍDO (MESH NETWORK)
+═══════════════════════════════════════════════════════════════════════════════
+
+Você DEVE implementar:
+
+1. **Backend Go com Gossip Protocol:**
+\`\`\`go
+import "github.com/hashicorp/memberlist"
+
+config := memberlist.DefaultLocalConfig()
+config.Name = os.Getenv("NODE_NAME")
+list, err := memberlist.Create(config)
+
+// Juntar-se ao cluster
+existingNodes := os.Getenv("JOIN_NODES")
+if existingNodes != "" {
+    nodes := strings.Split(existingNodes, ",")
+    list.Join(nodes)
+}
+\`\`\`
+
+2. **Docker Compose Multi-Nó:**
+\`\`\`yaml
+services:
+  cockroach-1:
+    image: cockroachdb/cockroach:latest
+    command: start --insecure --advertise-addr=cockroach-1
+  
+  cockroach-2:
+    command: start --insecure --join=cockroach-1
+  
+  cockroach-3:
+    command: start --insecure --join=cockroach-1
+  
+  app-1:
+    environment:
+      NODE_NAME: app-1
+      JOIN_NODES: app-2:7946,app-3:7946
+  
+  app-2:
+    environment:
+      NODE_NAME: app-2
+      JOIN_NODES: app-1:7946,app-3:7946
+  
+  app-3:
+    environment:
+      NODE_NAME: app-3
+      JOIN_NODES: app-1:7946,app-2:7946
+  
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+\`\`\`
+
+3. **Nginx Load Balancer:**
+\`\`\`nginx
+upstream backend {
+    least_conn;
+    server app-1:8080;
+    server app-2:8080;
+    server app-3:8080;
+}
+\`\`\`
+
+4. **README com instruções de clustering:**
+- Como adicionar novos nós
+- Como testar failover
+- Como monitorar o cluster
+
+═══════════════════════════════════════════════════════════════════════════════
+` : '';
+    
     return `
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                    🎨 MODO ARTESÃO ATIVADO 🎨                                ║
@@ -332,6 +460,8 @@ Retorne APENAS o JSON, sem texto adicional.
 Você é um ARTESÃO DIGITAL com maestria em código de excelência.
 
 Sua missão: Implementar a arquitetura criada pelo ARQUITETO com PERFEIÇÃO.
+
+${meshInstructions}
 
 ═══════════════════════════════════════════════════════════════════════════════
 

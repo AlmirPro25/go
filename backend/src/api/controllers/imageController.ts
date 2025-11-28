@@ -84,10 +84,17 @@ async function generateImageWithGemini(description: string, context: string): Pr
       },
     });
 
-    // Processar resposta
+    // Processar resposta com validação
+    if (!response.candidates || !response.candidates[0]?.content?.parts) {
+      throw new Error('Resposta inválida da API Gemini');
+    }
+
     for (const part of response.candidates[0].content.parts) {
       if (part.inlineData && part.inlineData.mimeType?.startsWith('image/')) {
         const imageData = part.inlineData.data;
+        if (!imageData) {
+          continue;
+        }
         const buffer = Buffer.from(imageData, 'base64');
         
         // Salvar imagem com nome único

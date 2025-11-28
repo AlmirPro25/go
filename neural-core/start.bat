@@ -1,0 +1,3 @@
+@echo off
+echo Iniciando Neural Core...
+npm run dev

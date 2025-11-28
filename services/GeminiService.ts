@@ -23,6 +23,12 @@ import {
 } from './ExcellenceCore';
 import { AuroraBuilder, type AuroraRequest } from '../aurora-build/core/AuroraBuilder';
 import { knowledgeBase, type KnowledgeQueryResult } from './KnowledgeBase';
+import { backendTerminalService } from '../src/services/BackendTerminalService';
+import { TEST_DRIVEN_DEVELOPMENT_MANIFEST } from './manifestos/TEST_DRIVEN_DEVELOPMENT_MANIFEST';
+import { DISTRIBUTED_MESH_NETWORK_MANIFEST } from './manifestos/DISTRIBUTED_MESH_NETWORK_MANIFEST';
+import { HONO_FRAMEWORK_MANIFEST } from './manifestos/HONO_FRAMEWORK_MANIFEST';
+import { HYBRID_ARCHITECTURE_MANIFEST } from './manifestos/HYBRID_ARCHITECTURE_MANIFEST';
+import { MCP_INTEGRATION_MANIFEST, shouldEnableMCP } from './manifestos/MCP_INTEGRATION_MANIFEST';
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -2647,6 +2653,274 @@ export function autoEnrichPromptIfSingleFileApp(prompt: string): string {
     }
     
     return prompt;
+}
+
+/**
+ * ======================================================
+ * AUTO-ENRIQUECIMENTO DE PROMPT COM MANIFESTO TDD
+ * ======================================================
+ * 
+ * FILOSOFIA: "APLICATIVO SEM TESTE É APLICATIVO MORTO"
+ * 
+ * Esta função detecta quando o usuário está pedindo para criar código/aplicativo
+ * e SEMPRE adiciona o manifesto TDD para garantir que testes sejam gerados.
+ */
+export function enrichPromptWithTDD(prompt: string): string {
+    // Palavras-chave que indicam criação de código/aplicativo
+    const codeCreationKeywords = [
+        'criar', 'gerar', 'desenvolver', 'implementar', 'construir',
+        'fazer', 'criar aplicativo', 'criar app', 'criar sistema',
+        'criar api', 'criar backend', 'criar frontend', 'criar serviço',
+        'create', 'generate', 'develop', 'implement', 'build',
+        'make', 'create app', 'create system', 'create api'
+    ];
+
+    const promptLower = prompt.toLowerCase();
+    const isCodeCreation = codeCreationKeywords.some(keyword => 
+        promptLower.includes(keyword)
+    );
+
+    // Se for criação de código, adicionar manifesto TDD
+    if (isCodeCreation) {
+        console.log('🧪 Detectado pedido de criação de código - Ativando Manifesto TDD');
+        return `${TEST_DRIVEN_DEVELOPMENT_MANIFEST}
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 SOLICITAÇÃO DO USUÁRIO:
+═══════════════════════════════════════════════════════════════════════════════
+
+${prompt}
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ LEMBRE-SE: GERE O CÓDIGO + OS TESTES AUTOMATICAMENTE
+═══════════════════════════════════════════════════════════════════════════════
+
+Você DEVE gerar:
+1. ✅ O código funcional
+2. ✅ Os testes unitários (.test.ts)
+3. ✅ Os testes de integração (quando aplicável)
+4. ✅ A configuração de testes (jest.config.js ou vitest.config.ts)
+5. ✅ Os scripts de teste no package.json
+
+APLICATIVO SEM TESTE É APLICATIVO MORTO. 🧪
+`;
+    }
+
+    return prompt;
+}
+
+/**
+ * ======================================================
+ * AUTO-ENRIQUECIMENTO DE PROMPT COM MANIFESTO HONO
+ * ======================================================
+ * 
+ * FILOSOFIA: "HONO É O NOVO PADRÃO PARA BACKEND"
+ * 
+ * Esta função detecta quando o usuário está pedindo para criar API/Backend
+ * e SEMPRE adiciona o manifesto Hono para usar Hono.js ao invés de Express.
+ */
+export function enrichPromptWithHono(prompt: string): string {
+    // Palavras-chave que indicam criação de API/Backend
+    const backendKeywords = [
+        'api', 'backend', 'servidor', 'server', 'endpoint', 'rest',
+        'criar api', 'criar backend', 'criar servidor', 'criar endpoints',
+        'create api', 'create backend', 'create server', 'create endpoints',
+        'rota', 'route', 'controller', 'middleware'
+    ];
+
+    const promptLower = prompt.toLowerCase();
+    const isBackend = backendKeywords.some(keyword => 
+        promptLower.includes(keyword)
+    );
+
+    // Se for criação de backend/API, adicionar manifesto Hono
+    if (isBackend) {
+        console.log('🔥 Detectado pedido de API/Backend - Ativando Manifesto Hono.js');
+        return `${HONO_FRAMEWORK_MANIFEST}
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 SOLICITAÇÃO DO USUÁRIO:
+═══════════════════════════════════════════════════════════════════════════════
+
+${prompt}
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ LEMBRE-SE: USE HONO.JS AO INVÉS DE EXPRESS
+═══════════════════════════════════════════════════════════════════════════════
+
+Você DEVE usar:
+1. ✅ **Hono.js** ao invés de Express
+2. ✅ **Context (c)** ao invés de (req, res)
+3. ✅ **return c.json()** ao invés de res.send()
+4. ✅ **Zod** para validação
+5. ✅ **TypeScript** nativo
+6. ✅ **Bun** como runtime preferencial
+
+HONO É O NOVO PADRÃO. SEMPRE USE HONO. 🔥
+`;
+    }
+
+    return prompt;
+}
+
+/**
+ * ======================================================
+ * AUTO-ENRIQUECIMENTO DE PROMPT COM ARQUITETURA HÍBRIDA
+ * ======================================================
+ * 
+ * FILOSOFIA: "MELHOR DOS DOIS MUNDOS - HONO (BFF) + GO (CORE)"
+ * 
+ * Esta função detecta quando o usuário está pedindo para criar sistema completo/fintech
+ * e SEMPRE adiciona o manifesto de arquitetura híbrida (Hono + Go).
+ */
+export function enrichPromptWithHybridArchitecture(prompt: string): string {
+    // Palavras-chave que indicam sistema completo/fintech
+    const hybridKeywords = [
+        'sistema completo', 'full-stack', 'fullstack', 'fintech',
+        'aplicação completa', 'sistema de pagamento', 'sistema financeiro',
+        'frontend e backend', 'frontend + backend', 'react e backend',
+        'complete system', 'payment system', 'financial system',
+        'pix', 'transferência', 'transação', 'saldo', 'conta'
+    ];
+
+    const promptLower = prompt.toLowerCase();
+    const isHybrid = hybridKeywords.some(keyword => 
+        promptLower.includes(keyword)
+    );
+
+    // Se for sistema completo/fintech, adicionar manifesto híbrido
+    if (isHybrid) {
+        console.log('🏗️ Detectado pedido de Sistema Completo - Ativando Arquitetura Híbrida (Hono + Go)');
+        return `${HYBRID_ARCHITECTURE_MANIFEST}
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 SOLICITAÇÃO DO USUÁRIO:
+═══════════════════════════════════════════════════════════════════════════════
+
+${prompt}
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ LEMBRE-SE: USE ARQUITETURA HÍBRIDA (3 CAMADAS)
+═══════════════════════════════════════════════════════════════════════════════
+
+Você DEVE gerar:
+1. ✅ **Frontend** (React + TypeScript)
+2. ✅ **BFF** (Hono.js + Bun) - Agregação + Cache + RPC
+3. ✅ **Core Backend** (Go + Gin) - Transações + PostgreSQL
+4. ✅ **Docker Compose** completo
+5. ✅ **Testes** para todas as camadas
+
+ARQUITETURA HÍBRIDA = MELHOR DOS DOIS MUNDOS. 🏗️
+`;
+    }
+
+    return prompt;
+}
+
+/**
+ * ======================================================
+ * AUTO-ENRIQUECIMENTO DE PROMPT COM REDE MESH DISTRIBUÍDA
+ * ======================================================
+ * 
+ * FILOSOFIA: "NENHUM PONTO ÚNICO DE FALHA. O CLUSTER É O COMPUTADOR."
+ * 
+ * Esta função detecta quando o usuário está pedindo sistema distribuído/cluster
+ * e SEMPRE adiciona o manifesto de rede mesh (Gossip Protocol + CockroachDB).
+ */
+export function enrichPromptWithDistributedMesh(prompt: string): string {
+    // Palavras-chave que indicam sistema distribuído
+    const distributedKeywords = [
+        'distribuído', 'cluster', 'escalabilidade infinita',
+        'vários servidores', 'alta disponibilidade', 'sharding',
+        'multi-node', 'cockroachdb', 'kubernetes', 'swarm',
+        'auto-discovery', 'gossip protocol', 'sem ponto de falha',
+        'conectar automaticamente', 'unificar servidores',
+        'distributed', 'high availability', 'auto-clustering'
+    ];
+
+    const promptLower = prompt.toLowerCase();
+    const isDistributed = distributedKeywords.some(keyword => 
+        promptLower.includes(keyword)
+    );
+
+    // Se for sistema distribuído, adicionar manifesto mesh
+    if (isDistributed) {
+        console.log('🌐 Detectado pedido de Sistema Distribuído - Ativando Manifesto MESH NETWORK');
+        return `${DISTRIBUTED_MESH_NETWORK_MANIFEST}
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 SOLICITAÇÃO DO USUÁRIO:
+═══════════════════════════════════════════════════════════════════════════════
+
+${prompt}
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ LEMBRE-SE: CRIE UM SISTEMA AUTO-ESCALÁVEL (CLUSTERING)
+═══════════════════════════════════════════════════════════════════════════════
+
+Você DEVE gerar:
+1. ✅ Backend em Go preparado para clustering (usando memberlist ou similar)
+2. ✅ Configuração de Banco de Dados distribuído (CockroachDB preferencialmente)
+3. ✅ Docker Compose que sobe MÚLTIPLOS nós do mesmo serviço (ex: app-node-1, app-node-2)
+4. ✅ Load Balancer (Nginx/Traefik) configurado para balancear entre eles
+5. ✅ Gossip Protocol para auto-descoberta
+6. ✅ Consistent Hashing para distribuição de dados
+7. ✅ Testes de failover
+
+O SISTEMA DEVE FUNCIONAR COMO UM ÚNICO ORGANISMO. 🌐
+`;
+    }
+
+    return prompt;
+}
+
+/**
+ * ======================================================
+ * ENRIQUECIMENTO MCP: INTEROPERABILIDADE COM AGENTES
+ * ======================================================
+ * 
+ * FILOSOFIA: "INTEROPERABILIDADE TOTAL - APPS QUE FALAM COM IAs"
+ * 
+ * Esta função detecta quando o usuário quer que o sistema seja acessível por IAs
+ * ou tenha capacidades de agente, e injeta o manifesto MCP.
+ * 
+ * Resultado: Apps que nascem prontos para conectar com Claude, Cursor e outros agentes.
+ */
+export function enrichPromptWithMCP(prompt: string): string {
+    if (!shouldEnableMCP(prompt)) {
+        return prompt;
+    }
+
+    console.log('🔌 Detectado pedido de Integração MCP - Ativando Manifesto MCP');
+    
+    return `${MCP_INTEGRATION_MANIFEST}
+
+═══════════════════════════════════════════════════════════════════════════════
+📝 SOLICITAÇÃO DO USUÁRIO:
+═══════════════════════════════════════════════════════════════════════════════
+
+${prompt}
+
+═══════════════════════════════════════════════════════════════════════════════
+⚠️ LEMBRE-SE: IMPLEMENTE O SERVIDOR MCP (Model Context Protocol)
+═══════════════════════════════════════════════════════════════════════════════
+
+Você DEVE gerar:
+1. ✅ Uma pasta dedicada \`src/mcp\` ou arquivo \`mcp-server.ts\` no backend
+2. ✅ Configuração do SDK \`@modelcontextprotocol/sdk\` no package.json
+3. ✅ Definição de **Resources** para leitura de dados do banco
+4. ✅ Definição de **Tools** para ações (criar/editar/deletar)
+5. ✅ Instruções no README de como conectar este app ao Claude/Cursor
+6. ✅ Exemplo de configuração do Claude Desktop
+
+TORNE ESTE APP UM NÓ INTELIGENTE NA REDE DE AGENTES. 🔌
+
+Agora o app gerado será:
+- 🧠 Acessível por Claude, ChatGPT, Cursor e outros agentes
+- 📖 Capaz de compartilhar dados (Resources)
+- 🔧 Capaz de executar ações (Tools)
+- 🔌 Totalmente interoperável via protocolo padrão (MCP)
+`;
 }
 
 /**
@@ -5916,6 +6190,47 @@ export async function generateAiResponse(
     attachments?: Part[]
 ): Promise<AiServiceResponse> {
 
+    // 🧠 NEURAL CORE: Amplificador opcional (modo híbrido inteligente)
+    const USE_NEURAL_CORE = import.meta.env.VITE_USE_NEURAL_CORE === 'true';
+    const NEURAL_CORE_URL = import.meta.env.VITE_NEURAL_CORE_URL || 'http://localhost:3000';
+    
+    if (USE_NEURAL_CORE && NEURAL_CORE_URL && !currentCodeInput) {
+        console.log('🧠 Neural Core: Tentando amplificação...');
+        try {
+            const response = await fetch(`${NEURAL_CORE_URL}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    prompt: userPromptInput, 
+                    modelName: modelName || 'gemini-2.0-flash-exp',
+                    temperature: 0.7
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Neural Core ativado! Protocolos:', data.metadata?.appliedProtocols || []);
+                return {
+                    code: data.text || '',
+                    plan: null,
+                    groundingSources: null,
+                    metadata: {
+                        neuralCoreUsed: true,
+                        detectedContext: data.metadata?.detectedContext,
+                        appliedProtocols: data.metadata?.appliedProtocols,
+                        duration: data.metadata?.duration
+                    }
+                };
+            }
+            console.warn('⚠️ Neural Core retornou erro, usando modo normal...');
+        } catch (error) {
+            console.warn('⚠️ Neural Core indisponível, usando modo normal...', error);
+        }
+    }
+
+    // ⚡ MODO NORMAL: Continua com o fluxo atual (nada muda)
+    console.log('⚡ Usando modo normal (frontend)');
+
     // 🧠 KNOWLEDGE BASE: Consultar base de conhecimento para contexto relevante
     console.log('🧠 Consultando Knowledge Base...');
     const knowledgeResults = knowledgeBase.query(userPromptInput);
@@ -6528,7 +6843,22 @@ export async function* generateAiResponseStream(
     attachments?: Part[]
 ): AsyncGenerator<AiServiceStreamResponse> {
     // 🎯 ENRIQUECIMENTO AUTOMÁTICO: Detectar e enriquecer prompts de single-file apps
-    const enrichedUserPromptInput = autoEnrichPromptIfSingleFileApp(userPromptInput);
+    let enrichedUserPromptInput = autoEnrichPromptIfSingleFileApp(userPromptInput);
+    
+    // � ENRIQUUECIMENTO MESH NETWORK: Detectar sistemas distribuídos (Gossip + CockroachDB)
+    enrichedUserPromptInput = enrichPromptWithDistributedMesh(enrichedUserPromptInput);
+    
+    // 🏗️ ENRIQUECIMENTO ARQUITETURA HÍBRIDA: Detectar sistemas completos (Hono + Go)
+    enrichedUserPromptInput = enrichPromptWithHybridArchitecture(enrichedUserPromptInput);
+    
+    // 🔥 ENRIQUECIMENTO HONO: Adicionar manifesto Hono.js para APIs/Backend
+    enrichedUserPromptInput = enrichPromptWithHono(enrichedUserPromptInput);
+    
+    // 🧪 ENRIQUECIMENTO TDD: Adicionar manifesto de testes automatizados
+    enrichedUserPromptInput = enrichPromptWithTDD(enrichedUserPromptInput);
+    
+    // 🔌 ENRIQUECIMENTO MCP: Adicionar manifesto de interoperabilidade com agentes
+    enrichedUserPromptInput = enrichPromptWithMCP(enrichedUserPromptInput);
 
     const userPrompt = escapeStringForTemplateLiteral(enrichedUserPromptInput);
     const currentPlan = currentPlanInput ? escapeStringForTemplateLiteral(currentPlanInput) : null;
@@ -7291,7 +7621,62 @@ Agora, gere o objeto JSON com sua decisão e resposta.
 
     const jsonStr = cleanAiOutput(response.text, AiResponseType.CHAT_AGENT_RESPONSE);
     try {
-        return JSON.parse(jsonStr) as AiChatAgentResponse;
+        const parsedResponse = JSON.parse(jsonStr) as AiChatAgentResponse;
+        
+        // 🚀 INTEGRAÇÃO COM BACKEND TERMINAL: Executa comandos reais
+        if (parsedResponse.intent === 'run_command' && parsedResponse.command) {
+            try {
+                // Verifica se o backend está disponível
+                const isHealthy = await backendTerminalService.checkHealth();
+                
+                if (isHealthy) {
+                    // Executa o comando via Backend
+                    const result = await backendTerminalService.executeCommand(
+                        parsedResponse.command,
+                        './project'
+                    );
+                    
+                    console.log('[Backend Output]', result.stdout);
+                    if (result.stderr) {
+                        console.error('[Backend Error]', result.stderr);
+                    }
+                    console.log('[Backend Exit]', result.exitCode);
+                    
+                    // Analisa erro para Self-Healing
+                    if (!result.success && result.stderr) {
+                        backendTerminalService.analyzeErrorForSelfHealing(
+                            result.stderr,
+                            parsedResponse.command
+                        );
+                    }
+                    
+                    // Retorna resposta com resultado
+                    const statusEmoji = result.success ? '✅' : '❌';
+                    const statusText = result.success ? 'Sucesso' : 'Erro';
+                    
+                    return {
+                        ...parsedResponse,
+                        response: `${statusEmoji} **Comando executado: ${statusText}**\n\n\`\`\`bash\n${parsedResponse.command}\n\`\`\`\n\n**Saída:**\n\`\`\`\n${result.stdout || '(vazio)'}\n\`\`\`\n\n${result.stderr ? `**Erros:**\n\`\`\`\n${result.stderr}\n\`\`\`\n\n` : ''}${parsedResponse.explanation || ''}`,
+                        commandResult: result
+                    };
+                } else {
+                    // Fallback: Backend não está disponível
+                    return {
+                        ...parsedResponse,
+                        response: `⚠️ **Backend Terminal não disponível.**\n\nCertifique-se de que o backend está rodando:\n\n\`\`\`bash\ncd backend\nnpm run dev\n\`\`\`\n\n**Ou execute manualmente:**\n\n\`\`\`bash\n${parsedResponse.command}\n\`\`\`\n\n${parsedResponse.explanation || ''}`
+                    };
+                }
+            } catch (backendError) {
+                console.error('Backend execution error:', backendError);
+                // Fallback em caso de erro
+                return {
+                    ...parsedResponse,
+                    response: `⚠️ **Erro ao executar comando no backend.**\n\nExecute manualmente:\n\n\`\`\`bash\n${parsedResponse.command}\n\`\`\`\n\n${parsedResponse.explanation || ''}`
+                };
+            }
+        }
+        
+        return parsedResponse;
     } catch (e) {
         console.error("Failed to parse JSON from chat agent:", jsonStr, e);
         // Fallback for non-json responses
@@ -7316,7 +7701,16 @@ export const generateWithPersona = async (
     }
 
     // 🎯 ENRIQUECIMENTO AUTOMÁTICO: Detectar e enriquecer prompts de single-file apps
-    const enrichedPrompt = autoEnrichPromptIfSingleFileApp(prompt);
+    let enrichedPrompt = autoEnrichPromptIfSingleFileApp(prompt);
+    
+    // 🔥 ENRIQUECIMENTO HONO: Adicionar manifesto Hono.js para APIs/Backend
+    enrichedPrompt = enrichPromptWithHono(enrichedPrompt);
+    
+    // 🧪 ENRIQUECIMENTO TDD: Adicionar manifesto de testes automatizados
+    enrichedPrompt = enrichPromptWithTDD(enrichedPrompt);
+    
+    // 🔌 ENRIQUECIMENTO MCP: Adicionar manifesto de interoperabilidade com agentes
+    enrichedPrompt = enrichPromptWithMCP(enrichedPrompt);
 
     // Aplicar o contexto da persona ao prompt
     const enhancedPrompt = applyPersonaContext(enrichedPrompt, personaId);
@@ -7429,3 +7823,429 @@ export const recommendPersonaForPrompt = (prompt: string): AiPersona | null => {
 
 // Exportar a função analyzeCruelly
 export { analyzeCruelly };
+
+/**
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                              ║
+ * ║         🔌 MCP INTEGRATION: GEMINI SERVICE AS MCP SERVER 🔌                 ║
+ * ║                                                                              ║
+ * ║              Expõe o Gemini como um servidor Model Context Protocol          ║
+ * ║              para interoperabilidade universal com Agentes de IA             ║
+ * ║                                                                              ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ */
+
+/**
+ * RECURSOS MCP (Resources) - Dados passivos que a IA pode ler
+ * Mapeiam endpoints GET para URIs semânticas
+ */
+export const MCPResources = {
+    // Listar personas disponíveis
+    'gemini://personas/list': async () => {
+        const personas = getAvailablePersonas();
+        return {
+            uri: 'gemini://personas/list',
+            mimeType: 'application/json',
+            text: JSON.stringify(personas, null, 2)
+        };
+    },
+
+    // Obter detalhes de uma persona específica
+    'gemini://personas/{personaId}': async (personaId: string) => {
+        const persona = getPersonaById(personaId);
+        if (!persona) {
+            throw new Error(`Persona não encontrada: ${personaId}`);
+        }
+        return {
+            uri: `gemini://personas/${personaId}`,
+            mimeType: 'application/json',
+            text: JSON.stringify(persona, null, 2)
+        };
+    },
+
+    // Obter status de uso da API
+    'gemini://usage/status': async () => {
+        return {
+            uri: 'gemini://usage/status',
+            mimeType: 'application/json',
+            text: JSON.stringify({
+                currentUsage: getCurrentUsage(),
+                dailyLimit: DAILY_USAGE_LIMIT,
+                remainingQuota: DAILY_USAGE_LIMIT - getCurrentUsage(),
+                resetTime: getResetTime()
+            }, null, 2)
+        };
+    }
+};
+
+/**
+ * FERRAMENTAS MCP (Tools) - Ações que a IA pode executar
+ * Mapeiam operações POST/PATCH para funções executáveis
+ */
+export const MCPTools = {
+    /**
+     * Gerar conteúdo com o Gemini
+     * @param prompt - Instrução para o Gemini
+     * @param modelName - Modelo a usar (padrão: gemini-2.5-flash)
+     * @param personaId - ID da persona (opcional)
+     */
+    'gemini:generate': {
+        description: 'Gera conteúdo usando o Gemini com suporte a personas especializadas',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                prompt: {
+                    type: 'string',
+                    description: 'Instrução ou pergunta para o Gemini'
+                },
+                modelName: {
+                    type: 'string',
+                    description: 'Modelo Gemini a usar (padrão: gemini-2.5-flash)',
+                    enum: ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+                },
+                personaId: {
+                    type: 'string',
+                    description: 'ID da persona especializada (opcional)'
+                }
+            },
+            required: ['prompt']
+        },
+        execute: async (params: any) => {
+            const { prompt, modelName = 'gemini-2.5-flash', personaId } = params;
+
+            if (personaId) {
+                const result = await generateWithPersona(prompt, personaId, modelName);
+                return {
+                    success: true,
+                    content: result.content,
+                    persona: result.persona?.name
+                };
+            } else {
+                const response = await generateContent(prompt, modelName);
+                return {
+                    success: true,
+                    content: response
+                };
+            }
+        }
+    },
+
+    /**
+     * Gerar código HTML com excelência máxima
+     */
+    'gemini:generate-html': {
+        description: 'Gera código HTML com critérios de excelência máxima (100/100)',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                prompt: {
+                    type: 'string',
+                    description: 'Descrição do que você quer criar'
+                },
+                modelName: {
+                    type: 'string',
+                    description: 'Modelo Gemini a usar'
+                }
+            },
+            required: ['prompt']
+        },
+        execute: async (params: any) => {
+            const { prompt, modelName = 'gemini-2.5-flash' } = params;
+            const response = await generateHtmlWithExcellence(prompt, modelName);
+            return {
+                success: true,
+                html: response
+            };
+        }
+    },
+
+    /**
+     * Analisar e criticar código gerado
+     */
+    'gemini:critique': {
+        description: 'Analisa código HTML e fornece crítica construtiva para melhorias',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                html: {
+                    type: 'string',
+                    description: 'Código HTML a analisar'
+                },
+                userPrompt: {
+                    type: 'string',
+                    description: 'Prompt original do usuário (opcional)'
+                },
+                modelName: {
+                    type: 'string',
+                    description: 'Modelo Gemini a usar'
+                }
+            },
+            required: ['html']
+        },
+        execute: async (params: any) => {
+            const { html, userPrompt = null, modelName = 'gemini-2.5-flash' } = params;
+            const critique = await critiqueGeneratedSite(html, userPrompt, null, modelName);
+            return {
+                success: true,
+                critique
+            };
+        }
+    },
+
+    /**
+     * Recomendar persona para um prompt
+     */
+    'gemini:recommend-persona': {
+        description: 'Recomenda a melhor persona especializada para um prompt',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                prompt: {
+                    type: 'string',
+                    description: 'Prompt do usuário para análise'
+                }
+            },
+            required: ['prompt']
+        },
+        execute: async (params: any) => {
+            const { prompt } = params;
+            const persona = recommendPersonaForPrompt(prompt);
+            return {
+                success: true,
+                recommendedPersona: persona,
+                message: persona 
+                    ? `Persona recomendada: ${persona.name}` 
+                    : 'Nenhuma persona específica recomendada'
+            };
+        }
+    },
+
+    /**
+     * Debugar código com IA
+     */
+    'gemini:debug': {
+        description: 'Analisa código e ajuda a identificar e corrigir problemas',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                code: {
+                    type: 'string',
+                    description: 'Código a debugar'
+                },
+                problemDescription: {
+                    type: 'string',
+                    description: 'Descrição do problema'
+                },
+                modelName: {
+                    type: 'string',
+                    description: 'Modelo Gemini a usar'
+                }
+            },
+            required: ['code', 'problemDescription']
+        },
+        execute: async (params: any) => {
+            const { code, problemDescription, modelName = 'gemini-2.5-flash' } = params;
+            const solution = await debugCodeWithAi(code, problemDescription, modelName);
+            return {
+                success: true,
+                solution
+            };
+        }
+    },
+
+    /**
+     * Sugerir refatoração de código
+     */
+    'gemini:refactor': {
+        description: 'Sugere refatorações para melhorar qualidade, performance e legibilidade',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                code: {
+                    type: 'string',
+                    description: 'Código a refatorar'
+                },
+                language: {
+                    type: 'string',
+                    description: 'Linguagem de programação'
+                },
+                modelName: {
+                    type: 'string',
+                    description: 'Modelo Gemini a usar'
+                }
+            },
+            required: ['code', 'language']
+        },
+        execute: async (params: any) => {
+            const { code, language, modelName = 'gemini-2.5-flash' } = params;
+            const suggestions = await suggestRefactoring(code, language, modelName);
+            return {
+                success: true,
+                suggestions
+            };
+        }
+    },
+
+    /**
+     * Gerar testes para código
+     */
+    'gemini:generate-tests': {
+        description: 'Gera sugestões de testes unitários e E2E para código',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                code: {
+                    type: 'string',
+                    description: 'Código para o qual gerar testes'
+                },
+                testFramework: {
+                    type: 'string',
+                    description: 'Framework de testes (Jest, Vitest, Mocha, etc)',
+                    enum: ['jest', 'vitest', 'mocha', 'cypress', 'playwright']
+                },
+                modelName: {
+                    type: 'string',
+                    description: 'Modelo Gemini a usar'
+                }
+            },
+            required: ['code', 'testFramework']
+        },
+        execute: async (params: any) => {
+            const { code, testFramework, modelName = 'gemini-2.5-flash' } = params;
+            const tests = await generateTestSuggestions(code, null, modelName);
+            return {
+                success: true,
+                tests,
+                framework: testFramework
+            };
+        }
+    }
+};
+
+/**
+ * PROMPTS MCP (Prompts) - Templates de instruções para facilitar uso
+ * Oferece instruções pré-configuradas para tarefas comuns
+ */
+export const MCPPrompts = {
+    'gemini:create-landing-page': {
+        description: 'Template para criar uma landing page profissional',
+        arguments: [
+            {
+                name: 'productName',
+                description: 'Nome do produto/serviço'
+            },
+            {
+                name: 'targetAudience',
+                description: 'Público-alvo'
+            },
+            {
+                name: 'mainFeatures',
+                description: 'Principais features (separadas por vírgula)'
+            }
+        ],
+        template: `Crie uma landing page profissional e moderna para:
+        
+Produto: {productName}
+Público-alvo: {targetAudience}
+Features principais: {mainFeatures}
+
+Requisitos:
+- Design responsivo e mobile-first
+- Acessibilidade WCAG 2.1 AA
+- Performance otimizada
+- Conversão focada
+- Aviso regulatório se necessário`
+    },
+
+    'gemini:create-dashboard': {
+        description: 'Template para criar um dashboard administrativo',
+        arguments: [
+            {
+                name: 'dataType',
+                description: 'Tipo de dados a visualizar'
+            },
+            {
+                name: 'metrics',
+                description: 'Métricas principais (separadas por vírgula)'
+            }
+        ],
+        template: `Crie um dashboard administrativo para:
+
+Tipo de dados: {dataType}
+Métricas: {metrics}
+
+Requisitos:
+- Gráficos interativos
+- Filtros e busca
+- Responsivo
+- Dark mode
+- Exportação de dados`
+    },
+
+    'gemini:create-form': {
+        description: 'Template para criar um formulário validado',
+        arguments: [
+            {
+                name: 'formPurpose',
+                description: 'Propósito do formulário'
+            },
+            {
+                name: 'fields',
+                description: 'Campos necessários (separados por vírgula)'
+            }
+        ],
+        template: `Crie um formulário profissional para:
+
+Propósito: {formPurpose}
+Campos: {fields}
+
+Requisitos:
+- Validação em tempo real
+- Mensagens de erro claras
+- Acessibilidade completa
+- Responsivo
+- Segurança (CSRF, sanitização)`
+    }
+};
+
+/**
+ * Inicializar servidor MCP do Gemini
+ * Expõe recursos, ferramentas e prompts para agentes de IA
+ */
+export const initializeMCPServer = async () => {
+    return {
+        name: 'Gemini-MCP-Server',
+        version: '1.0.0',
+        resources: MCPResources,
+        tools: MCPTools,
+        prompts: MCPPrompts,
+        capabilities: {
+            resources: true,
+            tools: true,
+            prompts: true,
+            sampling: false
+        }
+    };
+};
+
+/**
+ * Função auxiliar para executar uma ferramenta MCP
+ */
+export const executeMCPTool = async (toolName: string, params: any) => {
+    const tool = MCPTools[toolName as keyof typeof MCPTools];
+    if (!tool) {
+        throw new Error(`Ferramenta MCP não encontrada: ${toolName}`);
+    }
+    return await tool.execute(params);
+};
+
+/**
+ * Função auxiliar para acessar um recurso MCP
+ */
+export const accessMCPResource = async (resourceUri: string, params?: any) => {
+    const resource = MCPResources[resourceUri as keyof typeof MCPResources];
+    if (!resource) {
+        throw new Error(`Recurso MCP não encontrado: ${resourceUri}`);
+    }
+    return await resource(params);
+};

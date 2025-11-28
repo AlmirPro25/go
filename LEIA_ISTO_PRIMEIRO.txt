@@ -1,0 +1,102 @@
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║     🚀 AI WEB WEAVER - INSTRUÇÕES FINAIS 🚀               ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
+
+PROBLEMA: O PowerShell está com restrições de execução.
+
+SOLUÇÃO: Use o CMD (Prompt de Comando) ou clique nos arquivos .bat
+
+═══════════════════════════════════════════════════════════
+
+📋 OPÇÃO 1: CLIQUE DUPLO (MAIS FÁCIL)
+
+1. Abra o Explorador de Arquivos
+2. Navegue até: C:\Users\almir\Desktop\resereva-main
+3. Clique DUAS VEZES em: SETUP_E_INICIAR.bat
+
+Pronto! Ele vai fazer tudo sozinho.
+
+═══════════════════════════════════════════════════════════
+
+📋 OPÇÃO 2: CMD (PROMPT DE COMANDO)
+
+1. Pressione: Windows + R
+2. Digite: cmd
+3. Pressione: Enter
+4. Digite os comandos:
+
+   cd C:\Users\almir\Desktop\resereva-main
+   SETUP_E_INICIAR.bat
+
+═══════════════════════════════════════════════════════════
+
+🎯 O QUE VAI ACONTECER:
+
+1. ✅ Instala dependências do backend (nodemon, etc.)
+2. ✅ Instala dependências do frontend
+3. ✅ Cria workspace
+4. ✅ Cria arquivo .env
+5. ✅ Abre janela do Backend (porta 5000)
+6. ✅ Abre janela do Frontend (porta 5173)
+
+═══════════════════════════════════════════════════════════
+
+📖 DEPOIS QUE INICIAR:
+
+1. Aguarde 30-60 segundos (instalação + inicialização)
+2. Abra o navegador em: http://localhost:5173
+3. Faça login ou registre-se
+4. No chat, teste:
+
+   "Forje o Nexus Bank"
+
+Isso vai criar um banco digital completo com:
+- Backend Go
+- Frontend React
+- PostgreSQL
+- Docker Compose
+- Integração Mercado Pago
+- Self-Healing automático
+
+═══════════════════════════════════════════════════════════
+
+🔧 SE DER ERRO:
+
+1. Verifique se Node.js está instalado:
+   node --version
+
+2. Se não estiver, instale em:
+   https://nodejs.org/
+
+3. Feche TODAS as janelas do PowerShell/CMD
+
+4. Execute novamente: SETUP_E_INICIAR.bat
+
+═══════════════════════════════════════════════════════════
+
+💡 COMANDOS DE TESTE:
+
+Depois que o sistema estiver rodando, teste no chat:
+
+- "Liste os arquivos do projeto"
+- "Instale o axios"
+- "Crie um projeto React com TypeScript"
+- "Forje o Nexus Bank" (Fintech completa!)
+
+═══════════════════════════════════════════════════════════
+
+🎉 PRONTO!
+
+O sistema está configurado e pronto para uso.
+
+Qualquer dúvida, consulte:
+- SISTEMA_FINAL_OPERACIONAL.md
+- GUIA_RAPIDO_SISTEMA_INTEGRADO.md
+
+═══════════════════════════════════════════════════════════
+
+🚀 EXECUTE AGORA: SETUP_E_INICIAR.bat
+
+(Clique duas vezes no arquivo ou use o CMD)
